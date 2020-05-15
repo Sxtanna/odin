@@ -15,6 +15,8 @@ enum class Word
 	REDO,
 	TYPE,
 	
+	LOOP,
+	
 	CLASS,
 	TRAIT;
 	

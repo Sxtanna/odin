@@ -23,11 +23,12 @@ import com.sxtanna.odin.compile.data.Word
 import com.sxtanna.odin.compile.util.PeekIterator
 import com.sxtanna.odin.runtime.Command
 import com.sxtanna.odin.runtime.CommandClazzDefine
-import com.sxtanna.odin.runtime.CommandConditional
+import com.sxtanna.odin.runtime.CommandWhen
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
 import com.sxtanna.odin.runtime.CommandGet
 import com.sxtanna.odin.runtime.CommandLiteral
+import com.sxtanna.odin.runtime.CommandLoop
 import com.sxtanna.odin.runtime.CommandOperate
 import com.sxtanna.odin.runtime.CommandPropertyAccess
 import com.sxtanna.odin.runtime.CommandPropertyAssign
@@ -140,6 +141,8 @@ object Typer : (List<TokenData>) -> List<Command>
 				parseWhen(cmds)
 			Word.TYPE ->
 				parseTypeQuery(cmds)
+			Word.LOOP ->
+				parseLoop(cmds)
 			Word.REDO  ->
 			{
 				val peek = peek()
@@ -218,7 +221,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		var type = Types.none()
 		var prompt = null as? String?
 		
-		if (!empty)
+		if (!empty && peek()?.type == BOUND || peek()?.type == PAREN_L)
 		{
 			var next: TokenData
 			
@@ -230,7 +233,7 @@ object Typer : (List<TokenData>) -> List<Command>
 					"pull bounds can be only 1 type"
 				}
 				
-				if (!empty)
+				if (!empty && peek()?.type == PAREN_L)
 				{
 					next = next()
 				}
@@ -318,7 +321,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		val peek = peek()
 		if (peek == null || peek.type != WORD || Word.find(peek.data) != Word.ELSE)
 		{
-			cmds += CommandConditional(Route.of(expr), Route.of(pass), null)
+			cmds += CommandWhen(Route.of(expr), Route.of(pass), null)
 			return
 		}
 		
@@ -361,7 +364,66 @@ object Typer : (List<TokenData>) -> List<Command>
 			"when condition pass must be in braces"
 		}
 		
-		cmds += CommandConditional(Route.of(expr), Route.of(pass), Route.of(fail))
+		cmds += CommandWhen(Route.of(expr), Route.of(pass), Route.of(fail))
+	}
+	
+	private fun PeekIterator<TokenData>.parseLoop(cmds: MutableList<Command>)
+	{
+		var next: TokenData
+		
+		next = next()
+		require(next.type == PAREN_L)
+		{
+			"loop condition must be in parentheses"
+		}
+		
+		val expr = mutableListOf<Command>()
+		parseShuntedExpression(expr)
+		
+		next = next()
+		require(next.type == PAREN_R)
+		{
+			"loop condition must be in parentheses"
+		}
+		
+		ignoreNewLines()
+		
+		next = next()
+		require(next.type == BRACE_L)
+		{
+			"loop body pass must be in braces"
+		}
+		
+		ignoreNewLines()
+		
+		val body = mutableListOf<Command>()
+		
+		while (!empty)
+		{
+			next = peek() ?: break
+			
+			if (next.type == BRACE_R)
+			{
+				break
+			}
+			if (next.type == NEWLINE)
+			{
+				move(1)
+				continue
+			}
+			
+			parseMain(body)
+		}
+		
+		ignoreNewLines()
+		
+		next = next()
+		require(next.type == BRACE_R)
+		{
+			"loop body pass must be in braces"
+		}
+		
+		cmds += CommandLoop(Route.of(expr), Route.of(body))
 	}
 	
 	private fun PeekIterator<TokenData>.parseBound(): List<Types>

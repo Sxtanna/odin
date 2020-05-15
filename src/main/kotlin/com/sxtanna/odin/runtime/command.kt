@@ -229,6 +229,7 @@ data class CommandConsolePull(val type: Types, val prompt: String?)
 					Type.INT.back -> scan.nextLong()
 					Type.DEC.back -> scan.nextDouble()
 					Type.BIT.back -> scan.nextBoolean()
+					Type.NIL.back -> scan.nextLine()
 					else          ->
 					{
 						throw UnsupportedOperationException("unable to pull value of type: $type")
@@ -247,7 +248,7 @@ data class CommandConsolePull(val type: Types, val prompt: String?)
 	}
 }
 
-data class CommandConditional(val expr: Route, val conditionPass: Route, val conditionFail: Route?)
+data class CommandWhen(val expr: Route, val conditionPass: Route, val conditionFail: Route?)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
@@ -272,13 +273,25 @@ data class CommandConditional(val expr: Route, val conditionPass: Route, val con
 		}
 		
 		// evaluate branches of conditions
-		if (pass)
+		val result = when
 		{
-			Odin.eval(context, conditionPass, stack)
+			pass                  ->
+			{
+				Odin.eval(context, conditionPass, stack)
+			}
+			conditionFail != null ->
+			{
+				Odin.eval(context, conditionFail, stack)
+			}
+			else                  ->
+			{
+				null
+			}
 		}
-		else if (conditionFail != null)
+		
+		if (result != null && result is None)
 		{
-			Odin.eval(context, conditionFail, stack)
+			throw result.info
 		}
 	}
 }
@@ -408,6 +421,44 @@ data class CommandRoute(val route: Route)
 		if (result is None)
 		{
 			throw result.info
+		}
+	}
+}
+
+data class CommandLoop(val expr: Route, val body: Route)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		while (true)
+		{
+			val condition = Odin.eval(context, expr, stack)
+			if (condition is None)
+			{
+				throw condition.info
+			}
+			
+			var pass = stack.pull()
+			if (pass is Value)
+			{
+				pass = pass.data
+			}
+			
+			pass = requireNotNull(pass as? Boolean)
+			{
+				"condition result was not a bit"
+			}
+			
+			if (!pass)
+			{
+				break
+			}
+			
+			val result = Odin.eval(context, body, stack)
+			if (result is None)
+			{
+				throw result.info
+			}
 		}
 	}
 }

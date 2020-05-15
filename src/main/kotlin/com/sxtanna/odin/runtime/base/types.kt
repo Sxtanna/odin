@@ -20,7 +20,9 @@ sealed class Types
 	
 	companion object
 	{
-		fun none(): Types = None
+		val NONE = Basic("Nil")
+		
+		fun none(): Types = NONE
 	}
 }
 
@@ -95,9 +97,4 @@ data class Clazz(override val name: String)
 {
 	val scope = Scope(name)
 	val types = mutableListOf<Types>()
-}
-
-private object None : Types()
-{
-	override val name = "none"
 }

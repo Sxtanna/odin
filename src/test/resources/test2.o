@@ -1,0 +1,9 @@
+
+var count = 0
+
+loop (count < 5)
+{
+    push "Hello! " + count
+
+    count = count + 1
+}

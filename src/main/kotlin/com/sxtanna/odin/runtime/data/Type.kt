@@ -7,8 +7,9 @@ data class Type(val name: String, val back: Types)
 {
 	companion object
 	{
+		val NIL = Type("Nil", Types.NONE)
 		val ALL = Type("All", Basic("All"))
-		val NIL = Type("Nil", Basic("Nil"))
+		
 		val INT = Type("Int", Basic("Int"))
 		val DEC = Type("Dec", Basic("Dec"))
 		val BIT = Type("Bit", Basic("Bit"))

@@ -1,0 +1,14 @@
+
+val tuple = (0, 1, 2)
+
+push tuple
+
+push type(tuple)
+push tuple[1] + tuple[2]
+
+val other = (tuple[2], tuple[1], tuple[0])
+
+push other
+
+push type(other)
+push other[1] + other[2]

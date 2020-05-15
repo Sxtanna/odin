@@ -1,0 +1,18 @@
+val req = 21
+val age = pull::[Int]("Please provide your age: ")
+
+when (age >= req) {
+    push "You are allowed to drink!"
+}
+else {
+    var year = "year"
+    val diff = req - age
+
+    when (diff > 1) {
+        year = year + "s"
+    }
+
+    push "You are allowed to drink in " + diff + " " + year + "!"
+}
+
+redo 2

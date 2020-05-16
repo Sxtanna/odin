@@ -1,9 +1,11 @@
-
 var count = 0
 
-loop (count < 5)
+loop (true)
 {
-    push "Hello! " + count
+    push "Count = " + count
 
-    count = count + 1
+    when((count = count + 1) > 10)
+    {
+        stop
+    }
 }

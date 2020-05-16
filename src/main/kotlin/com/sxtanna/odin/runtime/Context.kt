@@ -33,6 +33,28 @@ class Context
 	}
 	
 	
+	fun defineProp(prop: Prop)
+	{
+		scope.props[prop.name] = prop
+	}
+	
+	fun defineType(type: Type)
+	{
+		scope.types[type.name] = type
+	}
+	
+	
+	fun joinScope(join: Scope)
+	{
+	
+	}
+	
+	fun quitScope()
+	{
+	
+	}
+	
+	
 	override fun toString(): String
 	{
 		val text =

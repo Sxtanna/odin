@@ -35,6 +35,16 @@ object CommandDone : Command()
 	override fun eval(stack: Stack, context: Context) = Unit
 }
 
+object CommandStop : Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		throw StopException
+	}
+	
+	object StopException : Exception()
+}
+
 data class CommandRedo(val count: Int)
 	: Command()
 {
@@ -49,12 +59,12 @@ data class CommandPropertyDefine(val prop: Prop)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		require(context.scope.props[prop.name] == null)
+		require(context.findProp(prop.name) == null)
 		{
 			"property ${prop.name} already defined"
 		}
 		
-		context.scope.props[prop.name] = prop
+		context.defineProp(prop)
 	}
 }
 
@@ -141,7 +151,7 @@ data class CommandTraitDefine(val trait: Trait)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		context.scope.types[trait.name] = Type(trait.name, trait)
+		context.defineType(Type(trait.name, trait))
 	}
 }
 
@@ -150,7 +160,7 @@ data class CommandClazzDefine(val clazz: Clazz)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		context.scope.types[clazz.name] = Type(clazz.name, clazz)
+		context.defineType(Type(clazz.name, clazz))
 	}
 }
 
@@ -310,8 +320,7 @@ data class CommandTuple(val size: Int)
 		val tuple = Tuple(data.map { it.type.back })
 		
 		val type = context.findType(tuple.name) ?: Type(tuple.name, tuple)
-		context.scope.types[tuple.name] = type
-		
+		context.defineType(type)
 		
 		stack.push(Value(type, data))
 	}
@@ -417,11 +426,15 @@ data class CommandRoute(val route: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
+		// println("route0: $stack")
+		
 		val result = Odin.eval(context, route, stack)
 		if (result is None)
 		{
 			throw result.info
 		}
+		
+		// println("route1: $stack")
 	}
 }
 
@@ -435,6 +448,11 @@ data class CommandLoop(val expr: Route, val body: Route)
 			val condition = Odin.eval(context, expr, stack)
 			if (condition is None)
 			{
+				if (condition.info is CommandStop.StopException)
+				{
+					break
+				}
+				
 				throw condition.info
 			}
 			
@@ -457,6 +475,11 @@ data class CommandLoop(val expr: Route, val body: Route)
 			val result = Odin.eval(context, body, stack)
 			if (result is None)
 			{
+				if (result.info is CommandStop.StopException)
+				{
+					break
+				}
+				
 				throw result.info
 			}
 		}

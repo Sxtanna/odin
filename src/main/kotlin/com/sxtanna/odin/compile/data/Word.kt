@@ -16,6 +16,7 @@ enum class Word
 	TYPE,
 	
 	LOOP,
+	STOP,
 	
 	CLASS,
 	TRAIT;

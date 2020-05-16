@@ -35,6 +35,7 @@ import com.sxtanna.odin.runtime.CommandPropertyAssign
 import com.sxtanna.odin.runtime.CommandPropertyDefine
 import com.sxtanna.odin.runtime.CommandRedo
 import com.sxtanna.odin.runtime.CommandRoute
+import com.sxtanna.odin.runtime.CommandStop
 import com.sxtanna.odin.runtime.CommandTraitDefine
 import com.sxtanna.odin.runtime.CommandTuple
 import com.sxtanna.odin.runtime.CommandTypeQuery
@@ -105,11 +106,17 @@ object Typer : (List<TokenData>) -> List<Command>
 			OPER   ->
 			{
 				move(-2)
-				parseShuntedExpression(cmds)
+				val expr = mutableListOf<Command>()
+				parseShuntedExpression(expr)
+				
+				cmds += CommandRoute(Route.of(expr))
 			}
 			ASSIGN ->
 			{
-				parseShuntedExpression(cmds)
+				val expr = mutableListOf<Command>()
+				parseShuntedExpression(expr)
+				
+				cmds += CommandRoute(Route.of(expr))
 				cmds += CommandPropertyAssign(data.data)
 			}
 		}
@@ -143,6 +150,8 @@ object Typer : (List<TokenData>) -> List<Command>
 				parseTypeQuery(cmds)
 			Word.LOOP ->
 				parseLoop(cmds)
+			Word.STOP ->
+				cmds += CommandStop
 			Word.REDO  ->
 			{
 				val peek = peek()
@@ -642,7 +651,17 @@ object Typer : (List<TokenData>) -> List<Command>
 				BIT     ->
 					parseLit(expr, next)
 				NAME    ->
-					parseRef(expr, next)
+				{
+					if (peek()?.type != ASSIGN)
+					{
+						parseRef(expr, next)
+					}
+					else
+					{
+						parseName(expr, next)
+						expr += CommandPropertyAccess(next.data)
+					}
+				}
 				TYPE    ->
 					parseNew(expr, next)
 				OPER    ->
@@ -738,6 +757,8 @@ object Typer : (List<TokenData>) -> List<Command>
 							parsePush(expr)
 						Word.TYPE ->
 							parseTypeQuery(expr)
+						Word.WHEN ->
+							parseWhen(expr)
 						else ->
 						{
 							throw UnsupportedOperationException("only the pull word is usable in expressions: $next")

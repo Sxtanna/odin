@@ -21,13 +21,26 @@ data class Route(val command: Command)
 	
 	override fun toString(): String
 	{
-		return if (next == null)
+		return buildString()
 		{
-			"${if (prev != null) "\n" else ""}Route[$command]"
-		}
-		else
-		{
-			"${if (prev != null) "\n" else ""}Route[$command]\n$next"
+			if (prev == null)
+			{
+				append("Route[")
+			}
+			
+			appendln()
+			append("=> ")
+			append(command)
+			
+			if (next != null)
+			{
+				append(next.toString())
+			}
+			else
+			{
+				appendln()
+				append("]")
+			}
 		}
 	}
 	

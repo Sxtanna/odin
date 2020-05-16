@@ -5,7 +5,7 @@ import com.sxtanna.odin.results.Some
 
 fun main()
 {
-	val code = ClassLoader.getSystemClassLoader().getResourceAsStream("test2.o")?.bufferedReader()?.readText()?.replace("\r", "") ?: return println("Could not read code from file!")
+	val code = ClassLoader.getSystemClassLoader().getResourceAsStream("test3.o")?.bufferedReader()?.readText()?.replace("\r", "") ?: return println("Could not read code from file!")
 	// println(code)
 	
 	when (val result = Odin.proc(code))

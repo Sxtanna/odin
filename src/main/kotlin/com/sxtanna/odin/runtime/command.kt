@@ -3,13 +3,16 @@ package com.sxtanna.odin.runtime
 import com.sxtanna.odin.Odin
 import com.sxtanna.odin.compile.data.Oper
 import com.sxtanna.odin.results.None
+import com.sxtanna.odin.results.Some
 import com.sxtanna.odin.runtime.base.Clazz
 import com.sxtanna.odin.runtime.base.Route
+import com.sxtanna.odin.runtime.base.Scope
 import com.sxtanna.odin.runtime.base.Stack
 import com.sxtanna.odin.runtime.base.Trait
 import com.sxtanna.odin.runtime.base.Tuple
 import com.sxtanna.odin.runtime.base.Types
 import com.sxtanna.odin.runtime.base.Value
+import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 import java.util.Scanner
@@ -54,14 +57,14 @@ data class CommandRedo(val count: Int)
 	}
 }
 
-data class CommandPropertyDefine(val prop: Prop)
+data class CommandPropertyDefine(val prop: Prop, val depth: Int = -1)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		require(context.findProp(prop.name) == null)
+		require(context.findProp(prop.name, depth) == null)
 		{
-			"property ${prop.name} already defined"
+			"property ${prop.name} already defined in scope ${context.scope[0].name}"
 		}
 		
 		context.defineProp(prop)
@@ -101,6 +104,20 @@ data class CommandPropertyAssign(val name: String)
 				throw UnsupportedOperationException("Cannot assign $property a value without a type")
 			}
 		}
+	}
+}
+
+data class CommandPropertyResets(val name: String)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		val property = requireNotNull(context.findProp(name))
+		{
+			"property $name has not been defined"
+		}
+		
+		property.data = null
 	}
 }
 
@@ -482,6 +499,75 @@ data class CommandLoop(val expr: Route, val body: Route)
 				
 				throw result.info
 			}
+		}
+	}
+}
+
+data class CommandFunctionDefine(val func: Func)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		context.defineFunc(func)
+	}
+}
+
+data class CommandFunctionAccess(val name: String)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		val func = requireNotNull(context.findFunc(name))
+		{
+			"function $name not defined"
+		}
+		
+		context.joinScope(Scope(func.name))
+		
+		//println("found function: $func")
+		//println("stack: $stack")
+		// println("body: ${func.body}")
+		
+		val pull = func.pull
+		val push = func.push
+		val body = func.body
+		
+		val funcStack = Stack()
+		
+		for (entry in pull)
+		{
+			//println("pulling: ${entry.key}")
+			funcStack.push(stack.pull())
+			//println("stack: $stack")
+		}
+		
+		//println("func stack0: $funcStack")
+		
+		
+		val result = if (body == null)
+		{
+			null
+		}
+		else
+		{
+			Odin.eval(context, body, funcStack)
+		}
+		
+		//println("func stack1: $funcStack")
+		
+		if (result != null && result is Some)
+		{
+			for (entry in push)
+			{
+				stack.push(funcStack.pull())
+			}
+		}
+		
+		context.quitScope()
+		
+		if (result is None)
+		{
+			throw result.info
 		}
 	}
 }

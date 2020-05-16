@@ -1,0 +1,11 @@
+
+val value = 10
+
+fun add(num0, num1: Int): Int {
+    => num0 + num1 + value
+}
+
+
+val result = add(5, 2)
+
+push "Result is " + result

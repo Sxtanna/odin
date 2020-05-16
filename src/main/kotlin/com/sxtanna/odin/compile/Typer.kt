@@ -1,4 +1,4 @@
-@file:Suppress("JoinDeclarationAndAssignment", "unused")
+@file:Suppress("JoinDeclarationAndAssignment", "unused", "DuplicatedCode")
 
 package com.sxtanna.odin.compile
 
@@ -26,6 +26,8 @@ import com.sxtanna.odin.runtime.CommandClazzDefine
 import com.sxtanna.odin.runtime.CommandWhen
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
+import com.sxtanna.odin.runtime.CommandFunctionAccess
+import com.sxtanna.odin.runtime.CommandFunctionDefine
 import com.sxtanna.odin.runtime.CommandGet
 import com.sxtanna.odin.runtime.CommandLiteral
 import com.sxtanna.odin.runtime.CommandLoop
@@ -33,6 +35,7 @@ import com.sxtanna.odin.runtime.CommandOperate
 import com.sxtanna.odin.runtime.CommandPropertyAccess
 import com.sxtanna.odin.runtime.CommandPropertyAssign
 import com.sxtanna.odin.runtime.CommandPropertyDefine
+import com.sxtanna.odin.runtime.CommandPropertyResets
 import com.sxtanna.odin.runtime.CommandRedo
 import com.sxtanna.odin.runtime.CommandRoute
 import com.sxtanna.odin.runtime.CommandStop
@@ -45,6 +48,7 @@ import com.sxtanna.odin.runtime.base.Route
 import com.sxtanna.odin.runtime.base.Trait
 import com.sxtanna.odin.runtime.base.Tuple
 import com.sxtanna.odin.runtime.base.Types
+import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import java.util.ArrayDeque
 
@@ -106,6 +110,14 @@ object Typer : (List<TokenData>) -> List<Command>
 			OPER   ->
 			{
 				move(-2)
+				val expr = mutableListOf<Command>()
+				parseShuntedExpression(expr)
+				
+				cmds += CommandRoute(Route.of(expr))
+			}
+			PAREN_L ->
+			{
+				move(-1)
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
@@ -216,7 +228,163 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseFunc(cmds: MutableList<Command>)
 	{
-	
+		var next: TokenData
+		
+		next = next()
+		require(next.type == NAME)
+		{
+			"function missing name"
+		}
+		
+		val func = Func(next.data)
+		
+		if (peek()?.type == PAREN_L)
+		{
+			next = next()
+			require(next.type == PAREN_L)
+			{
+				"function parameters must be surrounded in parentheses"
+			}
+			
+			val names = mutableSetOf<String>()
+			
+			while (!empty)
+			{
+				next = next()
+				
+				if (next.type == PAREN_R)
+				{
+					require(func.pull.isNotEmpty())
+					{
+						"function parentheses must contain parameters"
+					}
+					
+					move(-1)
+					
+					break
+				}
+				
+				if (next.type == COMMA)
+				{
+					require(names.isNotEmpty() || func.pull.isNotEmpty())
+					{
+						"first value must be a parameter"
+					}
+					
+					continue
+				}
+				
+				if (next.type == NAME)
+				{
+					require(names.add(next.data))
+					{
+						"parameter ${next.data} already defined for function ${func.name}"
+					}
+					
+					continue
+				}
+				
+				if (next.type == TYPED)
+				{
+					val type = parseType()
+					
+					for (name in names)
+					{
+						func.pull[name] = type
+					}
+					
+					names.clear()
+					continue
+				}
+				
+				throw UnsupportedOperationException("Token out of place: $next")
+			}
+			
+			next = next()
+			require(next.type == PAREN_R)
+			{
+				"function parameters must be surrounded in parentheses"
+			}
+			
+			// println("func ${func.name} pull: ${func.pull}")
+		}
+		
+		if (peek()?.type == TYPED)
+		{
+			next = next()
+			require(next.type == TYPED)
+			{
+				"function return type must be specified with typed symbol"
+			}
+			
+			func.push["ret0"] = parseType()
+			
+			// println("func ${func.name} push: ${func.push}")
+		}
+		
+		ignoreNewLines()
+		
+		next = next()
+		require(next.type == BRACE_L)
+		{
+			"function body must be surrounded with braces"
+		}
+		
+		ignoreNewLines()
+		
+		val body = mutableListOf<Command>()
+		
+		func.pull.forEach()
+		{ (name, type) ->
+			
+			val prop = Prop(name, false)
+			prop.type = type
+			
+			body += CommandPropertyDefine(prop, depth = 1)
+			body += CommandPropertyAssign(name)
+		}
+		
+		
+		while (!empty)
+		{
+			next = peek() ?: break
+			
+			if (next.type == BRACE_R)
+			{
+				break
+			}
+			if (next.type == NEWLINE)
+			{
+				move(1)
+				continue
+			}
+			if (next.type == RETURN)
+			{
+				move(1)
+				
+				parseShuntedExpression(body)
+				break
+			}
+			
+			parseMain(body)
+		}
+		
+		ignoreNewLines()
+		
+		next = next()
+		require(next.type == BRACE_R)
+		{
+			"function body must be surrounded with braces"
+		}
+		
+		func.pull.forEach()
+		{ (name, _) ->
+			body += CommandPropertyResets(name)
+		}
+		
+		func.body = Route.of(body)
+		
+		cmds += CommandFunctionDefine(func)
 	}
 	
 	private fun PeekIterator<TokenData>.parsePush(cmds: MutableList<Command>)
@@ -907,13 +1075,18 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData)
 	{
-		var next = peek()
-		
-		when (next?.type)
+		when (peek()?.type)
 		{
 			PAREN_L -> // function call
 			{
-			
+				val params = parseTup(funcParams = true)
+				
+				params.forEach()
+				{ expr ->
+					cmds += CommandRoute(Route.of(expr))
+				}
+				
+				cmds += CommandFunctionAccess(token.data)
 			}
 			else    ->
 			{
@@ -951,7 +1124,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 	}
 	
-	private fun PeekIterator<TokenData>.parseTup(): List<List<Command>>
+	private fun PeekIterator<TokenData>.parseTup(funcParams: Boolean = false): List<List<Command>>
 	{
 		val cmds = mutableListOf<List<Command>>()
 		
@@ -979,7 +1152,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			
 			if (next.type == PAREN_R)
 			{
-				require(cmds.isNotEmpty())
+				require(funcParams || cmds.isNotEmpty())
 				{
 					"tuple must contain data"
 				}

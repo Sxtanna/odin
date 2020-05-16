@@ -11,9 +11,9 @@ data class Prop(val name: String, val mutable: Boolean)
 	var data = null as? Value?
 		set(value)
 		{
-			check(mutable || field == null)
+			check(mutable || field == null || value == null)
 			{
-				"property reassignment"
+				"property reassignment: ${toString()}"
 			}
 			
 			field = value

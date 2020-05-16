@@ -68,6 +68,20 @@ object Typer
 		return cmds
 	}
 	
+	fun pass1(prev: List<Command>): List<Command>
+	{
+		val cmds = mutableListOf<Command>()
+		val iter = PeekIterator(prev)
+		
+		iter.each()
+		{
+			cmds += it
+			println(it)
+		}
+		
+		return cmds
+	}
+	
 	
 	private fun PeekIterator<TokenData>.parseMain(cmds: MutableList<Command>)
 	{

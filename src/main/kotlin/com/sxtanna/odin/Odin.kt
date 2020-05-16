@@ -71,10 +71,7 @@ object Odin
 			// println(lexed.data.joinToString("\n"))
 		}
 		
-		val typed = lexed.map()
-		{
-			Typer.pass0(it)
-		}
+		val typed = lexed.map(Typer::pass0).map(Typer::pass1)
 		
 		if (typed is Some)
 		{

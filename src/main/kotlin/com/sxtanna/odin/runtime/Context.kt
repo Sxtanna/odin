@@ -2,6 +2,7 @@ package com.sxtanna.odin.runtime
 
 import com.sxtanna.odin.runtime.base.Scope
 import com.sxtanna.odin.runtime.base.Stack
+import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Type
 import com.sxtanna.odin.runtime.data.Prop
 
@@ -10,8 +11,8 @@ class Context
 	val stack = Stack()
 	val globe = Scope("global")
 	
-	var scope = globe
 	var redos = 0
+	val scope = ArrayDeque<Scope>()
 	
 	init
 	{
@@ -19,39 +20,77 @@ class Context
 		{
 			globe.types[it.name] = it
 		}
+		
+		scope.add(globe)
 	}
 	
 	
-	fun findProp(name: String): Prop?
+	fun findProp(name: String, depth: Int = -1): Prop?
 	{
-		return scope.props[name] ?: globe.props[name]
+		var depth = depth
+		
+		for (scope in scope)
+		{
+			val prop = scope.props[name]
+			if (prop != null)
+			{
+				return prop
+			}
+			
+			if (depth != -1 && --depth <= 0)
+			{
+				break
+			}
+		}
+		
+		return null
+	}
+	
+	fun findFunc(name: String): Func?
+	{
+		for (scope in scope)
+		{
+			return scope.funcs[name] ?: continue
+		}
+		
+		return null
 	}
 	
 	fun findType(name: String): Type?
 	{
-		return scope.types[name] ?: globe.types[name]
+		for (scope in scope)
+		{
+			return scope.types[name] ?: continue
+		}
+		
+		return null
 	}
 	
 	
 	fun defineProp(prop: Prop)
 	{
-		scope.props[prop.name] = prop
+		scope[0].props[prop.name] = prop
+	}
+	
+	fun defineFunc(func: Func)
+	{
+		scope[0].funcs[func.name] = func
 	}
 	
 	fun defineType(type: Type)
 	{
-		scope.types[type.name] = type
+		scope[0].types[type.name] = type
 	}
 	
 	
 	fun joinScope(join: Scope)
 	{
-	
+		scope.addFirst(join)
 	}
 	
 	fun quitScope()
 	{
-	
+		scope.removeFirst()
 	}
 	
 	

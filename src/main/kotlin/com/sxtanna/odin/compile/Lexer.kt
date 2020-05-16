@@ -5,7 +5,7 @@ import com.sxtanna.odin.compile.base.TokenType
 import com.sxtanna.odin.compile.data.Word
 import com.sxtanna.odin.compile.util.PeekIterator
 
-object Lexer : (String) -> List<TokenData>
+object Lexer
 {
 	
 	private val digit = '0'..'9'
@@ -15,7 +15,7 @@ object Lexer : (String) -> List<TokenData>
 	private val symbol = setOf('+', '-', '/', '*', '<', '>', '!', '&')
 	
 	
-	override fun invoke(text: String): List<TokenData>
+	fun pass0(text: String): List<TokenData>
 	{
 		var char = 0
 		var line = 0

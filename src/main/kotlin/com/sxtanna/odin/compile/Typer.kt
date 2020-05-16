@@ -52,10 +52,10 @@ import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import java.util.ArrayDeque
 
-object Typer : (List<TokenData>) -> List<Command>
+object Typer
 {
 	
-	override fun invoke(toks: List<TokenData>): List<Command>
+	fun pass0(toks: List<TokenData>): List<Command>
 	{
 		val cmds = mutableListOf<Command>()
 		val iter = PeekIterator(toks)
@@ -67,6 +67,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		return cmds
 	}
+	
 	
 	private fun PeekIterator<TokenData>.parseMain(cmds: MutableList<Command>)
 	{

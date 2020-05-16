@@ -63,7 +63,7 @@ object Odin
 	{
 		val lexed = Result.of()
 		{
-			Lexer.invoke(code)
+			Lexer.pass0(code)
 		}
 		
 		if (lexed is Some)
@@ -73,7 +73,7 @@ object Odin
 		
 		val typed = lexed.map()
 		{
-			Typer.invoke(it)
+			Typer.pass0(it)
 		}
 		
 		if (typed is Some)

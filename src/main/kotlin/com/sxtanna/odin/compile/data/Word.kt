@@ -18,6 +18,8 @@ enum class Word
 	LOOP,
 	STOP,
 	
+	JAVA,
+	
 	CLASS,
 	TRAIT;
 	

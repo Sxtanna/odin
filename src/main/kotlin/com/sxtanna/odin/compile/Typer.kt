@@ -29,6 +29,8 @@ import com.sxtanna.odin.runtime.CommandConsolePush
 import com.sxtanna.odin.runtime.CommandFunctionAccess
 import com.sxtanna.odin.runtime.CommandFunctionDefine
 import com.sxtanna.odin.runtime.CommandGet
+import com.sxtanna.odin.runtime.CommandInstanceFunctionAccess
+import com.sxtanna.odin.runtime.CommandJavaTypeDefine
 import com.sxtanna.odin.runtime.CommandLiteral
 import com.sxtanna.odin.runtime.CommandLoop
 import com.sxtanna.odin.runtime.CommandOperate
@@ -76,7 +78,7 @@ object Typer
 		iter.each()
 		{
 			cmds += it
-			println(it)
+			// println(it)
 		}
 		
 		return cmds
@@ -146,6 +148,16 @@ object Typer
 				cmds += CommandRoute(Route.of(expr))
 				cmds += CommandPropertyAssign(data.data)
 			}
+			POINT ->
+			{
+				move(-1)
+				
+				parseRef(cmds, data)
+			}
+			else ->
+			{
+				throw UnsupportedOperationException("token out of place: $next")
+			}
 		}
 	}
 	
@@ -179,6 +191,8 @@ object Typer
 				parseLoop(cmds)
 			Word.STOP ->
 				cmds += CommandStop
+			Word.JAVA ->
+				parseJava(cmds)
 			Word.REDO  ->
 			{
 				val peek = peek()
@@ -618,6 +632,42 @@ object Typer
 		cmds += CommandLoop(Route.of(expr), Route.of(body))
 	}
 	
+	private fun PeekIterator<TokenData>.parseJava(cmds: MutableList<Command>)
+	{
+		var next: TokenData
+		
+		next = next()
+		require(next.type == BOUND)
+		{
+			"java reference must be bound!"
+		}
+		
+		next = next()
+		require(next.type == BRACK_L)
+		{
+			"java bounds must be a txt in bracks"
+		}
+		
+		next = next()
+		require(next.type == TXT)
+		{
+			"java bounds must be a FQN class"
+		}
+		
+		val name = next.data
+		
+		next = next()
+		require(next.type == BRACK_R)
+		{
+			"java bounds must be a txt in bracks"
+		}
+		
+		val clazz = Class.forName(name)
+		clazz.kotlin.members
+		
+		cmds += CommandJavaTypeDefine(clazz)
+	}
+	
 	private fun PeekIterator<TokenData>.parseBound(): List<Types>
 	{
 		var next: TokenData
@@ -942,6 +992,8 @@ object Typer
 							parseTypeQuery(expr)
 						Word.WHEN ->
 							parseWhen(expr)
+						Word.JAVA ->
+							parseJava(expr)
 						else ->
 						{
 							throw UnsupportedOperationException("only the pull word is usable in expressions: $next")
@@ -1088,20 +1140,17 @@ object Typer
 		cmds += CommandLiteral(type, data)
 	}
 	
-	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData)
+	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData, assigned: Boolean = false)
 	{
 		when (peek()?.type)
 		{
 			PAREN_L -> // function call
 			{
-				val params = parseTup(funcParams = true)
-				
-				params.forEach()
-				{ expr ->
-					cmds += CommandRoute(Route.of(expr))
-				}
-				
-				cmds += CommandFunctionAccess(token.data)
+				parseFuncCall(cmds, token)
+			}
+			POINT -> // instance function call
+			{
+				parseFuncCall(cmds, token, instance = true)
 			}
 			else    ->
 			{
@@ -1211,6 +1260,49 @@ object Typer
 		}
 		
 		cmds += CommandGet(Route.of(expr))
+	}
+	
+	
+	private fun PeekIterator<TokenData>.parseFuncCall(cmds: MutableList<Command>, token: TokenData, instance: Boolean = false)
+	{
+		if (!instance)
+		{
+			val params = parseTup(funcParams = true)
+			
+			params.forEach()
+			{ expr ->
+				cmds += CommandRoute(Route.of(expr))
+			}
+			
+			cmds += CommandFunctionAccess(token.data)
+			return
+		}
+		
+		var next: TokenData
+		
+		next = next()
+		require(next.type == POINT)
+		{
+			"instance function call must be with a point"
+		}
+		
+		next = next()
+		require(next.type == WORD || next.type == NAME || next.type == TYPE)
+		{
+			"instance function call must be one of [WORD, NAME, TYPE]"
+		}
+		
+		val funcName = next.data
+		
+		val params = parseTup(funcParams = true)
+		
+		params.forEach()
+		{ expr ->
+			cmds += CommandRoute(Route.of(expr))
+		}
+		
+		cmds += CommandPropertyAccess(token.data)
+		cmds += CommandInstanceFunctionAccess(funcName, params.size)
 	}
 	
 	

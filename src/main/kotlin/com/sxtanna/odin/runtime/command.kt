@@ -4,6 +4,7 @@ import com.sxtanna.odin.Odin
 import com.sxtanna.odin.compile.data.Oper
 import com.sxtanna.odin.results.None
 import com.sxtanna.odin.results.Some
+import com.sxtanna.odin.runtime.base.Basic
 import com.sxtanna.odin.runtime.base.Clazz
 import com.sxtanna.odin.runtime.base.Route
 import com.sxtanna.odin.runtime.base.Scope
@@ -16,6 +17,13 @@ import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 import java.util.Scanner
+import kotlin.reflect.KCallable
+import kotlin.reflect.KClass
+import kotlin.reflect.full.valueParameters
+import kotlin.reflect.jvm.isAccessible
+import kotlin.reflect.jvm.jvmErasure
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 sealed class Command
 {
@@ -489,16 +497,22 @@ data class CommandLoop(val expr: Route, val body: Route)
 				break
 			}
 			
+			context.joinScope(Scope("loop"))
+			
 			val result = Odin.eval(context, body, stack)
 			if (result is None)
 			{
 				if (result.info is CommandStop.StopException)
 				{
+					context.quitScope()
 					break
 				}
 				
+				context.quitScope()
 				throw result.info
 			}
+			
+			context.quitScope()
 		}
 	}
 }
@@ -571,3 +585,125 @@ data class CommandFunctionAccess(val name: String)
 		}
 	}
 }
+
+data class CommandInstanceFunctionAccess(val name: String, val size: Int)
+	: Command()
+{
+	@ExperimentalTime
+	override fun eval(stack: Stack, context: Context)
+	{
+		var type = stack.pull()
+		if (type is Value)
+		{
+			type = type.data
+		}
+		
+		val args = mutableListOf<Any>()
+		repeat(size)
+		{
+			var data = stack.pull()
+			if (data is Value)
+			{
+				data = data.data
+			}
+			
+			args += data
+		}
+		
+		// println("looking for $name")
+		
+		val (pair, findTime) = measureTimedValue()
+		{
+			requireNotNull(resolveMethodCall(type::class, name, args))
+			{
+				"could not resolve method $name"
+			}
+		}
+		//println("Find Time: $findType")
+		
+		val (method, params) = pair
+		method.isAccessible = true
+		
+		val (result, callTime) = measureTimedValue()
+		{
+			method.call(type, *params.toTypedArray())
+		}
+		//println("Call Time: $callTime")
+		
+		stack.push(Value(Type.ALL, result ?: Unit))
+	}
+	
+	
+	private fun resolveMethodCall(type: KClass<*>, name: String, args: List<Any>): Pair<KCallable<*>, List<Any>>?
+	{
+		//println(System.currentTimeMillis())
+		var funcs = type.members.filter { it.name == name }
+		if (funcs.isEmpty())
+		{
+			println("no named")
+			return null
+		}
+		
+		// println(funcs)
+		
+		//println(System.currentTimeMillis())
+		funcs = funcs.filter { it.valueParameters.size == args.size }
+		if (funcs.isEmpty())
+		{
+			// println("no sized")
+			return null
+		}
+		
+		if (funcs.size == 1 && args.isEmpty())
+		{
+			return funcs.single() to args
+		}
+		
+		//println(System.currentTimeMillis())
+		funcs.forEach()
+		match@ { method ->
+			val prms = method.valueParameters.map { it.type.jvmErasure }
+			val args = args.toMutableList()
+			
+			prms.indices.forEach()
+			{ index ->
+				
+				val thisType = args[index]::class
+				val thatType = prms[index]
+				
+				if (thisType != thatType)
+				{
+					if (thisType == Long::class && thatType == Int::class)
+					{
+						args[index] = (args[index] as Long).toInt()
+					}
+				}
+			}
+			
+			prms.indices.forEach()
+			{ index ->
+				val thisType = args[index]::class
+				val thatType = prms[index]
+				
+				if (thisType != thatType && thatType != Any::class)
+				{
+					return@match
+				}
+			}
+			
+			return method to args
+		}
+		
+		return null
+	}
+}
+
+data class CommandJavaTypeDefine(val clazz: Class<*>)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		stack.push(Value(Type(clazz.name, Basic(clazz.name)), clazz.getDeclaredConstructor().newInstance()))
+	}
+}
+

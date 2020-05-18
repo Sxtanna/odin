@@ -1,0 +1,10 @@
+
+var size = 0
+val list = java::["java.util.ArrayList"]
+
+loop (size != 10)
+{
+    list.add(size = size + 1)
+}
+
+push list

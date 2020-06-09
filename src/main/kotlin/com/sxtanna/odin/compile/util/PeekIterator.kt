@@ -10,6 +10,13 @@ data class PeekIterator<T : Any>(val data: List<T>)
 		get() = index > data.lastIndex
 	
 	
+	val peek: T?
+		get() = peek(amount = 0)
+	
+	val next: T
+		get() = next(amount = 1)
+	
+	
 	fun peek(amount: Int = 0): T?
 	{
 		return data.getOrNull(index + amount)

@@ -593,7 +593,6 @@ data class CommandInstanceDefine(val name: String)
 data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 	: Command()
 {
-	@ExperimentalTime
 	override fun eval(stack: Stack, context: Context)
 	{
 		var type = stack.pull()

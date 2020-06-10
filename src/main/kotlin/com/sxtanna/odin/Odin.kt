@@ -11,6 +11,8 @@ import com.sxtanna.odin.runtime.Context
 import com.sxtanna.odin.runtime.base.Route
 import com.sxtanna.odin.runtime.base.Stack
 import com.sxtanna.odin.runtime.base.Value
+import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
 
 object Odin
 {
@@ -19,7 +21,7 @@ object Odin
 	{
 		val cont = cont ?: Context()
 		
-		when (val read = read(code))
+		when (val read = read(code, printTime = true))
 		{
 			is None ->
 			{
@@ -27,7 +29,7 @@ object Odin
 			}
 			is Some ->
 			{
-				when (val data = eval(cont, read.data))
+				when (val data = eval(cont, read.data, printTime = true))
 				{
 					is None ->
 					{
@@ -59,41 +61,61 @@ object Odin
 		return Result.some(cont)
 	}
 	
-	fun read(code: String): Result<Route>
+	fun read(code: String, printTime: Boolean = false, printInfo: Boolean = false): Result<Route>
 	{
-		val lexed = Result.of()
+		val (lexed, lexerTime) = measureTimedValue()
 		{
-			Lexer.pass0(code)
+			Result.of { Lexer.pass0(code) }
 		}
 		
-		if (lexed is Some)
+		if (printTime)
 		{
-			// println(lexed.data.joinToString("\n"))
+			println("Lexing took: $lexerTime")
+		}
+		if (printInfo && lexed is Some)
+		{
+			println(lexed.data.joinToString("\n"))
 		}
 		
-		val typed = lexed.map(Typer::pass0).map(Typer::pass1)
-		
-		if (typed is Some)
+		val (typed, typerTime) = measureTimedValue()
 		{
-			// println()
-			// println(typed.data.joinToString("\n"))
-			// println()
+			lexed.map(Typer::pass0).map(Typer::pass1)
+		}
+		
+		if (printTime)
+		{
+			println("Typing took: $typerTime")
+		}
+		if (printInfo && typed is Some)
+		{
+			println()
+			println(typed.data.joinToString("\n"))
+			println()
 		}
 		
 		return typed.map { Route.of(it) }
 	}
 	
-	fun eval(cont: Context, route: Route, stack: Stack? = null): Result<Unit>
+	fun eval(cont: Context, route: Route, stack: Stack? = null, printTime: Boolean = false): Result<Unit>
 	{
 		return Result.of()
 		{
-			var route: Route? = route
-			
-			while (route != null)
+			val evalTime = measureTime()
 			{
-				route.eval(stack ?: cont.stack, cont)
+				var route: Route? = route
 				
-				route = route.next
+				while (route != null)
+				{
+					route.eval(stack ?: cont.stack, cont)
+					
+					route = route.next
+				}
+			}
+			
+			
+			if (printTime)
+			{
+				println("Evaluation took: $evalTime")
 			}
 		}
 	}

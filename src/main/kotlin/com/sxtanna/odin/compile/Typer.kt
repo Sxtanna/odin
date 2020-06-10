@@ -23,7 +23,6 @@ import com.sxtanna.odin.compile.data.Word
 import com.sxtanna.odin.compile.util.PeekIterator
 import com.sxtanna.odin.runtime.Command
 import com.sxtanna.odin.runtime.CommandClazzDefine
-import com.sxtanna.odin.runtime.CommandWhen
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
 import com.sxtanna.odin.runtime.CommandFunctionAccess
@@ -44,6 +43,7 @@ import com.sxtanna.odin.runtime.CommandStop
 import com.sxtanna.odin.runtime.CommandTraitDefine
 import com.sxtanna.odin.runtime.CommandTuple
 import com.sxtanna.odin.runtime.CommandTypeQuery
+import com.sxtanna.odin.runtime.CommandWhen
 import com.sxtanna.odin.runtime.base.Basic
 import com.sxtanna.odin.runtime.base.Clazz
 import com.sxtanna.odin.runtime.base.Route
@@ -87,9 +87,9 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseMain(cmds: MutableList<Command>)
 	{
-		val next = next()
+		val token = next
 		
-		when (next.type)
+		when (token.type)
 		{
 			NEWLINE ->
 			{
@@ -97,20 +97,20 @@ object Typer
 			}
 			WORD    ->
 			{
-				parseWord(cmds, next)
+				parseWord(cmds, token)
 			}
 			NAME    ->
 			{
-				parseName(cmds, next)
+				parseName(cmds, token)
 			}
 			NUM     ->
 			{
-				move(-1)
+				move(amount = -1)
 				parseShuntedExpression(cmds)
 			}
 			else    ->
 			{
-				throw IllegalStateException("token out of place: $next")
+				throw IllegalStateException("token out of place: $token")
 			}
 		}
 	}
@@ -118,15 +118,15 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseName(cmds: MutableList<Command>, data: TokenData)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
+		token = next
 		
-		when (next.type)
+		when (token.type)
 		{
-			OPER   ->
+			OPER    ->
 			{
-				move(-2)
+				move(amount = -2)
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
@@ -134,13 +134,13 @@ object Typer
 			}
 			PAREN_L ->
 			{
-				move(-1)
+				move(amount = -1)
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
 				cmds += CommandRoute(Route.of(expr))
 			}
-			ASSIGN ->
+			ASSIGN  ->
 			{
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
@@ -148,15 +148,15 @@ object Typer
 				cmds += CommandRoute(Route.of(expr))
 				cmds += CommandPropertyAssign(data.data)
 			}
-			POINT ->
+			POINT   ->
 			{
-				move(-1)
+				move(amount = -1)
 				
 				parseRef(cmds, data)
 			}
-			else ->
+			else    ->
 			{
-				throw UnsupportedOperationException("token out of place: $next")
+				throw UnsupportedOperationException("token out of place: $token")
 			}
 		}
 	}
@@ -185,32 +185,32 @@ object Typer
 				parsePull(cmds)
 			Word.WHEN  ->
 				parseWhen(cmds)
-			Word.TYPE ->
+			Word.TYPE  ->
 				parseTypeQuery(cmds)
-			Word.LOOP ->
+			Word.LOOP  ->
 				parseLoop(cmds)
-			Word.STOP ->
+			Word.STOP  ->
 				cmds += CommandStop
-			Word.JAVA ->
+			Word.JAVA  ->
 				parseJava(cmds)
 			Word.REDO  ->
 			{
-				val peek = peek()
-				require(peek == null || peek.type == NUM)
+				val check = peek
+				require(check == null || check.type == NUM)
 				{
 					"peek must be followed by nothing or a number"
 				}
 				
-				if (peek != null)
+				if (check != null)
 				{
-					move(1)
+					move(amount = 1)
 				}
 				
-				val numb = peek?.data?.toIntOrNull() ?: -1
+				val numb = check?.data?.toIntOrNull() ?: -1
 				
 				cmds += CommandRedo(numb)
 			}
-			else  ->
+			else       ->
 			{
 				throw UnsupportedOperationException("handling for word $word not found")
 			}
@@ -219,21 +219,21 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseProp(cmds: MutableList<Command>, mutable: Boolean, assignment: Boolean)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == NAME)
+		token = next
+		require(token.type == NAME)
 		{
 			"property missing name"
 		}
 		
 		
-		val prop = Prop(next.data, mutable)
+		val prop = Prop(token.data, mutable)
 		cmds += CommandPropertyDefine(prop)
 		
-		if (peek()?.type == TYPED)
+		if (peek?.type == TYPED)
 		{
-			next()
+			move(amount = 1)
 			prop.type = parseType()
 		}
 		
@@ -244,10 +244,10 @@ object Typer
 		}
 		
 		
-		next = next()
-		require(next.type == ASSIGN)
+		token = next
+		require(token.type == ASSIGN)
 		{
-			"must be assignment: $next"
+			"must be assignment: $token"
 		}
 		
 		parseShuntedExpression(cmds)
@@ -257,20 +257,20 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseFunc(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == NAME)
+		token = next
+		require(token.type == NAME)
 		{
 			"function missing name"
 		}
 		
-		val func = Func(next.data)
+		val func = Func(token.data)
 		
-		if (peek()?.type == PAREN_L)
+		if (peek?.type == PAREN_L)
 		{
-			next = next()
-			require(next.type == PAREN_L)
+			token = next
+			require(token.type == PAREN_L)
 			{
 				"function parameters must be surrounded in parentheses"
 			}
@@ -279,21 +279,21 @@ object Typer
 			
 			while (!empty)
 			{
-				next = next()
+				token = next
 				
-				if (next.type == PAREN_R)
+				if (token.type == PAREN_R)
 				{
 					require(func.pull.isNotEmpty())
 					{
 						"function parentheses must contain parameters"
 					}
 					
-					move(-1)
+					move(amount = -1)
 					
 					break
 				}
 				
-				if (next.type == COMMA)
+				if (token.type == COMMA)
 				{
 					require(names.isNotEmpty() || func.pull.isNotEmpty())
 					{
@@ -303,17 +303,17 @@ object Typer
 					continue
 				}
 				
-				if (next.type == NAME)
+				if (token.type == NAME)
 				{
-					require(names.add(next.data))
+					require(names.add(token.data))
 					{
-						"parameter ${next.data} already defined for function ${func.name}"
+						"parameter ${token.data} already defined for function ${func.name}"
 					}
 					
 					continue
 				}
 				
-				if (next.type == TYPED)
+				if (token.type == TYPED)
 				{
 					val type = parseType()
 					
@@ -326,11 +326,11 @@ object Typer
 					continue
 				}
 				
-				throw UnsupportedOperationException("Token out of place: $next")
+				throw UnsupportedOperationException("Token out of place: $token")
 			}
 			
-			next = next()
-			require(next.type == PAREN_R)
+			token = next
+			require(token.type == PAREN_R)
 			{
 				"function parameters must be surrounded in parentheses"
 			}
@@ -338,10 +338,10 @@ object Typer
 			// println("func ${func.name} pull: ${func.pull}")
 		}
 		
-		if (peek()?.type == TYPED)
+		if (peek?.type == TYPED)
 		{
-			next = next()
-			require(next.type == TYPED)
+			token = next
+			require(token.type == TYPED)
 			{
 				"function return type must be specified with typed symbol"
 			}
@@ -353,8 +353,8 @@ object Typer
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_L)
+		token = next
+		require(token.type == BRACE_L)
 		{
 			"function body must be surrounded with braces"
 		}
@@ -376,20 +376,20 @@ object Typer
 		
 		while (!empty)
 		{
-			next = peek() ?: break
+			token = peek ?: break
 			
-			if (next.type == BRACE_R)
+			if (token.type == BRACE_R)
 			{
 				break
 			}
-			if (next.type == NEWLINE)
+			if (token.type == NEWLINE)
 			{
-				move(1)
+				move(amount = 1)
 				continue
 			}
-			if (next.type == RETURN)
+			if (token.type == RETURN)
 			{
-				move(1)
+				move(amount = 1)
 				
 				parseShuntedExpression(body)
 				break
@@ -400,8 +400,8 @@ object Typer
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_R)
+		token = next
+		require(token.type == BRACE_R)
 		{
 			"function body must be surrounded with braces"
 		}
@@ -425,53 +425,53 @@ object Typer
 	private fun PeekIterator<TokenData>.parsePull(cmds: MutableList<Command>)
 	{
 		var type = Types.none()
-		var prompt = null as? String?
+		var text = null as? String?
 		
-		if (!empty && peek()?.type == BOUND || peek()?.type == PAREN_L)
+		if (!empty && peek?.type == BOUND || peek?.type == PAREN_L)
 		{
-			var next: TokenData
+			var token: TokenData
 			
-			next = next()
-			if (next.type == BOUND)
+			token = next
+			if (token.type == BOUND)
 			{
 				type = requireNotNull(parseBound().singleOrNull())
 				{
 					"pull bounds can be only 1 type"
 				}
 				
-				if (!empty && peek()?.type == PAREN_L)
+				if (!empty && peek?.type == PAREN_L)
 				{
-					next = next()
+					token = next
 				}
 			}
 			
-			if (next.type == PAREN_L)
+			if (token.type == PAREN_L)
 			{
-				next = next()
-				require(next.type == TXT)
+				token = next
+				require(token.type == TXT)
 				{
 					"pull parens must contain a txt prompt"
 				}
 				
-				prompt = next.data
+				text = token.data
 				
-				next = next()
-				require(next.type == PAREN_R)
+				token = next
+				require(token.type == PAREN_R)
 				{
 					"pull parens missing close"
 				}
 			}
 		}
 		
-		cmds += CommandConsolePull(type, prompt)
+		cmds += CommandConsolePull(type, text)
 	}
 	
 	private fun PeekIterator<TokenData>.parseWhen(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == PAREN_L)
+		token = next
+		require(token.type == PAREN_L)
 		{
 			"when condition must be in parentheses"
 		}
@@ -479,16 +479,16 @@ object Typer
 		val expr = mutableListOf<Command>()
 		parseShuntedExpression(expr)
 		
-		next = next()
-		require(next.type == PAREN_R)
+		token = next
+		require(token.type == PAREN_R)
 		{
 			"when condition must be in parentheses"
 		}
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_L)
+		token = next
+		require(token.type == BRACE_L)
 		{
 			"when condition pass must be in braces"
 		}
@@ -499,15 +499,15 @@ object Typer
 		
 		while (!empty)
 		{
-			next = peek() ?: break
+			token = peek ?: break
 			
-			if (next.type == BRACE_R)
+			if (token.type == BRACE_R)
 			{
 				break
 			}
-			if (next.type == NEWLINE)
+			if (token.type == NEWLINE)
 			{
-				move(1)
+				move(amount = 1)
 				continue
 			}
 			
@@ -516,27 +516,27 @@ object Typer
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_R)
+		token = next
+		require(token.type == BRACE_R)
 		{
 			"when condition pass must be in braces"
 		}
 		
 		ignoreNewLines()
 		
-		val peek = peek()
-		if (peek == null || peek.type != WORD || Word.find(peek.data) != Word.ELSE)
+		val check = peek
+		if (check == null || check.type != WORD || Word.find(check.data) != Word.ELSE)
 		{
 			cmds += CommandWhen(Route.of(expr), Route.of(pass), null)
 			return
 		}
 		
-		move(1) // skip else word
+		move(amount = 1) // skip else word
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_L)
+		token = next
+		require(token.type == BRACE_L)
 		{
 			"when condition fail must be in braces"
 		}
@@ -547,15 +547,15 @@ object Typer
 		
 		while (!empty)
 		{
-			next = peek() ?: break
+			token = peek ?: break
 			
-			if (next.type == BRACE_R)
+			if (token.type == BRACE_R)
 			{
 				break
 			}
-			if (next.type == NEWLINE)
+			if (token.type == NEWLINE)
 			{
-				move(1)
+				move(amount = 1)
 				continue
 			}
 			
@@ -564,8 +564,8 @@ object Typer
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_R)
+		token = next
+		require(token.type == BRACE_R)
 		{
 			"when condition pass must be in braces"
 		}
@@ -575,10 +575,10 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseLoop(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == PAREN_L)
+		token = next
+		require(token.type == PAREN_L)
 		{
 			"loop condition must be in parentheses"
 		}
@@ -586,16 +586,16 @@ object Typer
 		val expr = mutableListOf<Command>()
 		parseShuntedExpression(expr)
 		
-		next = next()
-		require(next.type == PAREN_R)
+		token = next
+		require(token.type == PAREN_R)
 		{
 			"loop condition must be in parentheses"
 		}
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_L)
+		token = next
+		require(token.type == BRACE_L)
 		{
 			"loop body pass must be in braces"
 		}
@@ -606,15 +606,15 @@ object Typer
 		
 		while (!empty)
 		{
-			next = peek() ?: break
+			token = peek ?: break
 			
-			if (next.type == BRACE_R)
+			if (token.type == BRACE_R)
 			{
 				break
 			}
-			if (next.type == NEWLINE)
+			if (token.type == NEWLINE)
 			{
-				move(1)
+				move(amount = 1)
 				continue
 			}
 			
@@ -623,8 +623,8 @@ object Typer
 		
 		ignoreNewLines()
 		
-		next = next()
-		require(next.type == BRACE_R)
+		token = next
+		require(token.type == BRACE_R)
 		{
 			"loop body pass must be in braces"
 		}
@@ -634,30 +634,30 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseJava(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == BOUND)
+		token = next
+		require(token.type == BOUND)
 		{
 			"java reference must be bound!"
 		}
 		
-		next = next()
-		require(next.type == BRACK_L)
+		token = next
+		require(token.type == BRACK_L)
 		{
 			"java bounds must be a txt in bracks"
 		}
 		
-		next = next()
-		require(next.type == TXT)
+		token = next
+		require(token.type == TXT)
 		{
 			"java bounds must be a FQN class"
 		}
 		
-		val name = next.data
+		val name = token.data
 		
-		next = next()
-		require(next.type == BRACK_R)
+		token = next
+		require(token.type == BRACK_R)
 		{
 			"java bounds must be a txt in bracks"
 		}
@@ -670,10 +670,10 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseBound(): List<Types>
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == BRACK_L)
+		token = next
+		require(token.type == BRACK_L)
 		{
 			"bounds missing brack l"
 		}
@@ -682,12 +682,12 @@ object Typer
 		
 		while (!empty)
 		{
-			if (next.type == NEWLINE)
+			if (token.type == NEWLINE)
 			{
 				continue
 			}
 			
-			if (next.type == COMMA)
+			if (token.type == COMMA)
 			{
 				require(types.isNotEmpty())
 				{
@@ -697,7 +697,7 @@ object Typer
 				continue
 			}
 			
-			if (next.type == BRACK_R)
+			if (token.type == BRACK_R)
 			{
 				require(types.isNotEmpty())
 				{
@@ -709,7 +709,7 @@ object Typer
 			
 			types += parseType()
 			
-			next = next()
+			token = next
 		}
 		
 		return types
@@ -717,35 +717,35 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseTrait(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == TYPE)
+		token = next
+		require(token.type == TYPE)
 		{
 			"trait missing type name"
 		}
 		
-		val name = next.data
+		val name = token.data
 		
 		val trait = Trait(name)
 		
 		cmds += CommandTraitDefine(trait)
 		
-		next = next()
-		require(next.type == PAREN_L || next.type == BRACE_L || next.type == BOUND)
+		token = next
+		require(token.type == PAREN_L || token.type == BRACE_L || token.type == BOUND)
 		{
 			"trait missing props or body"
 		}
 		
-		if (next.type == PAREN_L) // parse props
+		if (token.type == PAREN_L) // parse props
 		{
 			val props = mutableListOf<Command>()
 			
 			while (!empty)
 			{
-				next = next()
+				token = next
 				
-				if (next.type == PAREN_R)
+				if (token.type == PAREN_R)
 				{
 					require(props.isNotEmpty())
 					{
@@ -755,7 +755,7 @@ object Typer
 					break
 				}
 				
-				if (next.type == COMMA)
+				if (token.type == COMMA)
 				{
 					require(props.isNotEmpty())
 					{
@@ -765,28 +765,28 @@ object Typer
 					continue
 				}
 				
-				if (next.type == WORD)
+				if (token.type == WORD)
 				{
-					val word = requireNotNull(Word.find(next.data))
+					val word = requireNotNull(Word.find(token.data))
 					{
-						"word ${next.data} not found!"
+						"word ${token.data} not found!"
 					}
 					
 					when (word)
 					{
 						Word.VAL,
-						Word.VAR  ->
+						Word.VAR ->
 							parseProp(props, word == Word.VAR, false)
-						else ->
+						else     ->
 						{
-							throw UnsupportedOperationException("word out of place: $next")
+							throw UnsupportedOperationException("word out of place: $token")
 						}
 					}
 					
 					continue
 				}
 				
-				throw UnsupportedOperationException("token out of place: $next")
+				throw UnsupportedOperationException("token out of place: $token")
 			}
 			
 			val route = Route.of(props)
@@ -794,16 +794,16 @@ object Typer
 			
 			if (!empty)
 			{
-				next = next()
+				token = next
 			}
 		}
 		
-		if (next.type == BOUND)
+		if (token.type == BOUND)
 		{
 			trait.types += parseBound()
 		}
 		
-		if (next.type == BRACE_L) // parse body
+		if (token.type == BRACE_L) // parse body
 		{
 			// trouble time
 		}
@@ -811,32 +811,32 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseClazz(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == TYPE)
+		token = next
+		require(token.type == TYPE)
 		{
 			"class missing type name"
 		}
 		
-		val name = next.data
+		val name = token.data
 		
 		val clazz = Clazz(name)
 		
 		cmds += CommandClazzDefine(clazz)
 		
-		next = next()
-		require(next.type == BRACE_L || next.type == BOUND)
+		token = next
+		require(token.type == BRACE_L || token.type == BOUND)
 		{
 			"class missing bounds or body"
 		}
 		
-		if (next.type == BOUND)
+		if (token.type == BOUND)
 		{
 			clazz.types += parseBound()
 		}
 		
-		if (next.type == BRACE_L) // parse body
+		if (token.type == BRACE_L) // parse body
 		{
 			// trouble time
 		}
@@ -855,51 +855,51 @@ object Typer
 		var open = 0
 		val head = index
 		
-		var next: TokenData
+		var token: TokenData
 		
 		loop@ while (!empty)
 		{
-			next = next()
+			token = next
 			
-			if (next.type == NEWLINE)
+			if (token.type == NEWLINE)
 			{
 				break
 			}
-			if (next.type == COMMA && breakOnComma)
+			if (token.type == COMMA && breakOnComma)
 			{
-				move(-1)
+				move(amount = -1)
 				break
 			}
-			if (next.type == BRACE_R || next.type == BRACK_R)
+			if (token.type == BRACE_R || token.type == BRACK_R)
 			{
-				move(-1)
+				move(amount = -1)
 				break
 			}
 			
-			when (next.type)
+			when (token.type)
 			{
 				NUM,
 				LET,
 				TXT,
 				BIT     ->
-					parseLit(expr, next)
+					parseLit(expr, token)
 				NAME    ->
 				{
-					if (peek()?.type != ASSIGN)
+					if (peek?.type != ASSIGN)
 					{
-						parseRef(expr, next)
+						parseRef(expr, token)
 					}
 					else
 					{
-						parseName(expr, next)
-						expr += CommandPropertyAccess(next.data)
+						parseName(expr, token)
+						expr += CommandPropertyAccess(token.data)
 					}
 				}
 				TYPE    ->
-					parseNew(expr, next)
+					parseNew(expr, token)
 				OPER    ->
 				{
-					val oper = when (next.data)
+					val oper = when (token.data)
 					{
 						"+"  ->
 							OperatorAdd
@@ -929,7 +929,7 @@ object Typer
 							OperatorLessOrSame
 						else ->
 						{
-							throw UnsupportedOperationException("unknown operator: $next")
+							throw UnsupportedOperationException("unknown operator: $token")
 						}
 					}
 					
@@ -939,14 +939,14 @@ object Typer
 				{
 					require(open > 0)
 					{
-						"comma out of position: $next"
+						"comma out of position: $token"
 					}
 					
 					var erased = 0
-					while (peek()?.type != PAREN_L || index > head)
+					while (peek?.type != PAREN_L || index > head)
 					{
 						erased++
-						move(-1)
+						move(amount = -1)
 					}
 					
 					while (erased-- > 0)
@@ -968,7 +968,7 @@ object Typer
 				{
 					if (open == 0)
 					{
-						move(-1)
+						move(amount = -1)
 						break@loop
 					}
 					
@@ -977,12 +977,12 @@ object Typer
 				}
 				BRACK_L ->
 				{
-					move(-1)
+					move(amount = -1)
 					parseInd(expr)
 				}
 				WORD    ->
 				{
-					when (Word.find(next.data))
+					when (Word.find(token.data))
 					{
 						Word.PULL ->
 							parsePull(expr)
@@ -994,16 +994,16 @@ object Typer
 							parseWhen(expr)
 						Word.JAVA ->
 							parseJava(expr)
-						else ->
+						else      ->
 						{
-							throw UnsupportedOperationException("only the pull word is usable in expressions: $next")
+							throw UnsupportedOperationException("only the pull word is usable in expressions: $token")
 						}
 					}
 				}
 				else    ->
 				{
 					println(expr)
-					throw UnsupportedOperationException("token out of place $next")
+					throw UnsupportedOperationException("token out of place $token")
 				}
 			}
 		}
@@ -1013,50 +1013,50 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseType(): Types
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == TYPE || next.type == PAREN_L)
+		token = next
+		require(token.type == TYPE || token.type == PAREN_L)
 		{
-			"type must be TYPE or PAREN_L | $next"
+			"type must be TYPE or PAREN_L | $token"
 		}
 		
-		if (next.type == TYPE)
+		if (token.type == TYPE)
 		{
-			return Basic(next.data)
+			return Basic(token.data)
 		}
 		
 		val types = mutableListOf<Types>()
 		
 		while (!empty)
 		{
-			next = peek() ?: break
+			token = peek ?: break
 			
-			if (next.type == TYPE || next.type == PAREN_L)
+			if (token.type == TYPE || token.type == PAREN_L)
 			{
 				types += parseType()
 				continue
 			}
 			
-			if (next.type == COMMA)
+			if (token.type == COMMA)
 			{
 				require(types.isNotEmpty())
 				{
 					"first value must be a type"
 				}
 				
-				next() // skip comma
+				move(amount = 1) // skip comma
 				continue
 			}
 			
-			if (next.type == PAREN_R)
+			if (token.type == PAREN_R)
 			{
 				require(types.isNotEmpty())
 				{
 					"tuple must contain types"
 				}
 				
-				next() // skip paren r
+				move(amount = 1) // skip paren r
 				break
 			}
 		}
@@ -1066,10 +1066,10 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseTypeQuery(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == PAREN_L)
+		token = next
+		require(token.type == PAREN_L)
 		{
 			"type query must have a value in parentheses"
 		}
@@ -1077,8 +1077,8 @@ object Typer
 		val expr = mutableListOf<Command>()
 		parseShuntedExpression(expr)
 		
-		next = next()
-		require(next.type == PAREN_R)
+		token = next
+		require(token.type == PAREN_R)
 		{
 			"type query must have a value in parentheses"
 		}
@@ -1142,13 +1142,13 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData, assigned: Boolean = false)
 	{
-		when (peek()?.type)
+		when (peek?.type)
 		{
 			PAREN_L -> // function call
 			{
 				parseFuncCall(cmds, token)
 			}
-			POINT -> // instance function call
+			POINT   -> // instance function call
 			{
 				parseFuncCall(cmds, token, instance = true)
 			}
@@ -1159,15 +1159,15 @@ object Typer
 		}
 	}
 	
-	private fun PeekIterator<TokenData>.parseNew(cmds: MutableList<Command>, token: TokenData)
+	private fun PeekIterator<TokenData>.parseNew(cmds: MutableList<Command>, data: TokenData)
 	{
-		println("parsing new ${token.data}")
+		println("parsing new ${data.data}")
 		ignoreNewLines()
 		
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == BRACE_L)
+		token = next
+		require(token.type == BRACE_L)
 		{
 			"type must be followed by brace l"
 		}
@@ -1176,15 +1176,25 @@ object Typer
 		
 		while (!empty)
 		{
-			next = next()
+			token = next
 			
-			if (next.type == NAME)
+			if (token.type == NAME)
 			{
-				println("parsing property $next")
+				val name = token.data
+				
+				token = next
+				require(token.type == TYPED)
+				{
+					"new class properties assign with :"
+				}
+				
+				val expr = mutableListOf<Command>()
+				parseShuntedExpression(expr)
+				
+				println("$name: $expr")
 			}
 			
 		}
-		
 		
 	}
 	
@@ -1192,19 +1202,19 @@ object Typer
 	{
 		val cmds = mutableListOf<List<Command>>()
 		
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == PAREN_L)
+		token = next
+		require(token.type == PAREN_L)
 		{
 			"tuple must start with paren l"
 		}
 		
 		while (!empty)
 		{
-			next = next()
+			token = next
 			
-			if (next.type == COMMA)
+			if (token.type == COMMA)
 			{
 				require(cmds.isNotEmpty())
 				{
@@ -1214,7 +1224,7 @@ object Typer
 				continue
 			}
 			
-			if (next.type == PAREN_R)
+			if (token.type == PAREN_R)
 			{
 				require(funcParams || cmds.isNotEmpty())
 				{
@@ -1223,9 +1233,9 @@ object Typer
 				
 				break
 			}
-			if (next.type == PAREN_L)
+			if (token.type == PAREN_L)
 			{
-				move(-1)
+				move(amount = -1)
 				
 				val nest = parseTup()
 				cmds += nest.flatten() + CommandTuple(nest.size)
@@ -1233,7 +1243,7 @@ object Typer
 				continue
 			}
 			
-			move(-1)
+			move(amount = -1)
 			cmds += shuntingYard(parseExpr(breakOnComma = true))
 		}
 		
@@ -1242,10 +1252,10 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseInd(cmds: MutableList<Command>)
 	{
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == BRACK_L)
+		token = next
+		require(token.type == BRACK_L)
 		{
 			"index access requires brack l"
 		}
@@ -1253,8 +1263,8 @@ object Typer
 		val expr = mutableListOf<Command>()
 		parseShuntedExpression(expr)
 		
-		next = next()
-		require(next.type == BRACK_R)
+		token = next
+		require(token.type == BRACK_R)
 		{
 			"index access requires brack r"
 		}
@@ -1263,7 +1273,7 @@ object Typer
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parseFuncCall(cmds: MutableList<Command>, token: TokenData, instance: Boolean = false)
+	private fun PeekIterator<TokenData>.parseFuncCall(cmds: MutableList<Command>, data: TokenData, instance: Boolean = false)
 	{
 		if (!instance)
 		{
@@ -1274,25 +1284,25 @@ object Typer
 				cmds += CommandRoute(Route.of(expr))
 			}
 			
-			cmds += CommandFunctionAccess(token.data)
+			cmds += CommandFunctionAccess(data.data)
 			return
 		}
 		
-		var next: TokenData
+		var token: TokenData
 		
-		next = next()
-		require(next.type == POINT)
+		token = next
+		require(token.type == POINT)
 		{
 			"instance function call must be with a point"
 		}
 		
-		next = next()
-		require(next.type == WORD || next.type == NAME || next.type == TYPE)
+		token = next
+		require(token.type == WORD || token.type == NAME || token.type == TYPE)
 		{
 			"instance function call must be one of [WORD, NAME, TYPE]"
 		}
 		
-		val funcName = next.data
+		val funcName = token.data
 		
 		val params = parseTup(funcParams = true)
 		
@@ -1301,7 +1311,7 @@ object Typer
 			cmds += CommandRoute(Route.of(expr))
 		}
 		
-		cmds += CommandPropertyAccess(token.data)
+		cmds += CommandPropertyAccess(data.data)
 		cmds += CommandInstanceFunctionAccess(funcName, params.size)
 	}
 	
@@ -1378,12 +1388,12 @@ object Typer
 	{
 		while (!empty)
 		{
-			if (peek()?.type != NEWLINE)
+			if (peek?.type != NEWLINE)
 			{
 				break
 			}
 			
-			move(1)
+			move(amount = 1)
 		}
 	}
 	

@@ -17,12 +17,12 @@ data class PeekIterator<T : Any>(val data: List<T>)
 		get() = next(amount = 1)
 	
 	
-	fun peek(amount: Int = 0): T?
+	fun peek(amount: Int): T?
 	{
 		return data.getOrNull(index + amount)
 	}
 	
-	fun next(amount: Int = 1): T
+	fun next(amount: Int): T
 	{
 		val value = data[index]
 		move(amount)
@@ -40,7 +40,7 @@ data class PeekIterator<T : Any>(val data: List<T>)
 	{
 		while (!empty)
 		{
-			function.invoke(next())
+			function.invoke(next)
 		}
 	}
 	

@@ -66,11 +66,11 @@ object Lexer
 					add(TokenType.PAREN_R, c)
 				':'       ->
 				{
-					when (iter.peek())
+					when (iter.peek)
 					{
 						':'  ->
 						{
-							iter.next()
+							iter.move(amount = 1)
 							add(TokenType.BOUND, "::")
 						}
 						else ->
@@ -81,16 +81,16 @@ object Lexer
 				}
 				'='       ->
 				{
-					when (iter.peek())
+					when (iter.peek)
 					{
 						'='  ->
 						{
-							iter.next()
+							iter.move(amount = 1)
 							add(TokenType.OPER, "==")
 						}
 						'>'  ->
 						{
-							iter.next()
+							iter.move(amount = 1)
 							add(TokenType.RETURN, "=>")
 						}
 						else ->
@@ -104,9 +104,9 @@ object Lexer
 				{
 					val type = if (c == '\'') TokenType.LET else TokenType.TXT
 					
-					val data = if (iter.peek() == c)
+					val data = if (iter.peek == c)
 					{
-						iter.next()
+						iter.move(amount = 1)
 						""
 					}
 					else
@@ -115,16 +115,16 @@ object Lexer
 						{
 							while (!iter.empty)
 							{
-								val next = iter.next()
+								val next = iter.next
 								if (next == c)
 								{
 									break
 								}
 								if (next == '\\')
 								{
-									if (iter.peek() == 'n')
+									if (iter.peek == 'n')
 									{
-										iter.next()
+										iter.move(amount = 1)
 										appendln()
 										continue
 									}
@@ -140,7 +140,7 @@ object Lexer
 				'.',
 				in digit  ->
 				{
-					if (c == '.' && iter.peek() !in digit)
+					if (c == '.' && iter.peek !in digit)
 					{
 						return@each add(TokenType.POINT, c)
 					}
@@ -157,7 +157,7 @@ object Lexer
 						
 						while (!iter.empty)
 						{
-							val value = iter.peek()
+							val value = iter.peek
 							if (value !in digit && value != '.')
 							{
 								break
@@ -173,7 +173,7 @@ object Lexer
 								point = true
 							}
 							
-							append(iter.next())
+							append(iter.next)
 						}
 					}
 					
@@ -197,13 +197,13 @@ object Lexer
 						
 						while (!iter.empty)
 						{
-							val value = iter.peek()
+							val value = iter.peek
 							if (value !in lower && value !in upper && value !in digit && value != '_')
 							{
 								break
 							}
 							
-							append(iter.next())
+							append(iter.next)
 						}
 					}
 					
@@ -228,38 +228,38 @@ object Lexer
 				}
 				in symbol ->
 				{
-					if (c == '&' && iter.peek() == '&')
+					if (c == '&' && iter.peek == '&')
 					{
-						iter.move(1)
+						iter.move(amount = 1)
 						add(TokenType.OPER, "&&")
 						
 						return@each
 					}
-					if (c == '|' && iter.peek() == '|')
+					if (c == '|' && iter.peek == '|')
 					{
-						iter.move(1)
+						iter.move(amount = 1)
 						add(TokenType.OPER, "||")
 						
 						return@each
 					}
 					
-					if (c == '!' && iter.peek() == '=')
+					if (c == '!' && iter.peek == '=')
 					{
-						iter.move(1)
+						iter.move(amount = 1)
 						add(TokenType.OPER, "!=")
 						
 						return@each
 					}
-					if (c == '>' && iter.peek() == '=')
+					if (c == '>' && iter.peek == '=')
 					{
-						iter.move(1)
+						iter.move(amount = 1)
 						add(TokenType.OPER, ">=")
 						
 						return@each
 					}
-					if (c == '<' && iter.peek() == '=')
+					if (c == '<' && iter.peek == '=')
 					{
-						iter.move(1)
+						iter.move(amount = 1)
 						add(TokenType.OPER, "<=")
 						
 						return@each

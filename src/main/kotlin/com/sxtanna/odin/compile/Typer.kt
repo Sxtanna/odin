@@ -662,10 +662,7 @@ object Typer
 			"java bounds must be a txt in bracks"
 		}
 		
-		val clazz = Class.forName(name)
-		clazz.kotlin.members
-		
-		cmds += CommandJavaTypeDefine(clazz)
+		cmds += CommandJavaTypeDefine(Class.forName(name))
 	}
 	
 	private fun PeekIterator<TokenData>.parseBound(): List<Types>

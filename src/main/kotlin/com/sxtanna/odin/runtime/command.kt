@@ -16,14 +16,9 @@ import com.sxtanna.odin.runtime.base.Value
 import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
+import java.lang.reflect.Method
 import java.util.Scanner
-import kotlin.reflect.KCallable
-import kotlin.reflect.KClass
-import kotlin.reflect.full.valueParameters
-import kotlin.reflect.jvm.isAccessible
-import kotlin.reflect.jvm.jvmErasure
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 sealed class Command
 {
@@ -89,7 +84,7 @@ data class CommandPropertyAssign(val name: String)
 			"property $name has not been defined"
 		}
 		
-		when(val value = stack.pull())
+		when (val value = stack.pull())
 		{
 			is Value ->
 			{
@@ -107,7 +102,7 @@ data class CommandPropertyAssign(val name: String)
 				
 				property.data = value
 			}
-			else ->
+			else     ->
 			{
 				throw UnsupportedOperationException("Cannot assign $property a value without a type")
 			}
@@ -400,13 +395,13 @@ data class CommandGet(val indexExpr: Route)
 			access = access.data
 		}
 		
-		val data = when(access)
+		val data = when (access)
 		{
-			is Map<*, *> ->
+			is Map<*, *>    ->
 			{
 				access[index]
 			}
-			is List<*> ->
+			is List<*>      ->
 			{
 				access[index]
 			}
@@ -414,24 +409,24 @@ data class CommandGet(val indexExpr: Route)
 			{
 				access[index]
 			}
-			else ->
+			else            ->
 			{
 				throw UnsupportedOperationException("invalid accessor")
 			}
 		}
 		
-		val type = when(data)
+		val type = when (data)
 		{
 			is Value ->
 			{
 				data.type
 			}
-			else ->
+			else     ->
 			{
 				Type.ALL
 			}
 		}
-	
+		
 		
 		stack.push(Value(type, data ?: Unit))
 	}
@@ -586,6 +581,15 @@ data class CommandFunctionAccess(val name: String)
 	}
 }
 
+data class CommandInstanceDefine(val name: String)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+	
+	}
+}
+
 data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 	: Command()
 {
@@ -610,91 +614,89 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			args += data
 		}
 		
-		// println("looking for $name")
-		
-		val (pair, findTime) = measureTimedValue()
+		val (method, params) = requireNotNull(resolveMethodCallJ(type.javaClass, name, args))
 		{
-			requireNotNull(resolveMethodCall(type::class, name, args))
-			{
-				"could not resolve method $name"
-			}
+			"could not resolve method $name"
 		}
-		//println("Find Time: $findType")
 		
-		val (method, params) = pair
 		method.isAccessible = true
 		
-		val (result, callTime) = measureTimedValue()
-		{
-			method.call(type, *params.toTypedArray())
-		}
-		//println("Call Time: $callTime")
+		val result = method.invoke(type, *params)
 		
 		stack.push(Value(Type.ALL, result ?: Unit))
 	}
 	
-	
-	private fun resolveMethodCall(type: KClass<*>, name: String, args: List<Any>): Pair<KCallable<*>, List<Any>>?
+	private fun resolveMethodCallJ(type: Class<*>, name: String, args: List<Any>): Pair<Method, Array<Any>>?
 	{
-		//println(System.currentTimeMillis())
-		var funcs = type.members.filter { it.name == name }
+		var funcs = type.declaredMethods.filter { it.name == name }
 		if (funcs.isEmpty())
 		{
-			println("no named")
+			println("none")
 			return null
 		}
 		
-		// println(funcs)
-		
-		//println(System.currentTimeMillis())
-		funcs = funcs.filter { it.valueParameters.size == args.size }
+		funcs = funcs.filter { it.parameterCount == args.size }
 		if (funcs.isEmpty())
 		{
-			// println("no sized")
 			return null
 		}
 		
-		if (funcs.size == 1 && args.isEmpty())
+		if (funcs.size == 1)
 		{
-			return funcs.single() to args
+			val func = funcs.single()
+			
+			if (func.parameterCount == 0 && args.isEmpty())
+			{
+				return func to args.toTypedArray()
+			}
+			
+			return resolveMatching(func, args)
 		}
 		
-		//println(System.currentTimeMillis())
-		funcs.forEach()
-		match@ { method ->
-			val prms = method.valueParameters.map { it.type.jvmErasure }
-			val args = args.toMutableList()
-			
-			prms.indices.forEach()
-			{ index ->
-				
-				val thisType = args[index]::class
-				val thatType = prms[index]
-				
-				if (thisType != thatType)
-				{
-					if (thisType == Long::class && thatType == Int::class)
-					{
-						args[index] = (args[index] as Long).toInt()
-					}
-				}
-			}
-			
-			prms.indices.forEach()
-			{ index ->
-				val thisType = args[index]::class
-				val thatType = prms[index]
-				
-				if (thisType != thatType && thatType != Any::class)
-				{
-					return@match
-				}
-			}
-			
-			return method to args
+		for (func in funcs)
+		{
+			return resolveMatching(func, args) ?: continue
 		}
 		
 		return null
+	}
+	
+	private fun resolveMatching(func: Method, args: List<Any>): Pair<Method, Array<Any>>?
+	{
+		val meth = func.parameterTypes
+		val pass = args.toTypedArray()
+		
+		for (index in meth.indices)
+		{
+			val methType = meth[index]
+			
+			val passData = pass[index]
+			val passType = passData.javaClass
+			
+			if (methType != passType)
+			{
+				if (passData !is Number)
+				{
+					return null
+				}
+				
+				pass[index] = when (methType)
+				{
+					Byte::class.java   -> passData.toByte()
+					Short::class.java  -> passData.toShort()
+					Int::class.java    -> passData.toInt()
+					Long::class.java   -> passData.toLong()
+					Float::class.java  -> passData.toFloat()
+					Double::class.java -> passData.toDouble()
+					else               ->
+					{
+						return null
+					}
+				}
+			}
+		}
+		
+		return func to pass
 	}
 }
 

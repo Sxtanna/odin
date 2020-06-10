@@ -1,0 +1,9 @@
+val rand = java::["java.util.SplittableRandom"]
+
+var cur = 0
+val max = 10
+
+loop ((cur = cur + 1) < max)
+{
+    push rand.nextInt(0, 50)
+}

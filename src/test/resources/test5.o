@@ -1,0 +1,7 @@
+
+trait Named(val name: Txt)
+
+class Person::[Named]
+
+
+val person = Person { name: "Sxtanna" }

@@ -1,0 +1,3 @@
+val person = java::["com.sxtanna.odin.Person"]
+
+push person.getNameWith(3, "thing")

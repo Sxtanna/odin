@@ -20,14 +20,21 @@ import com.sxtanna.odin.compile.data.OperatorNot
 import com.sxtanna.odin.compile.data.OperatorSame
 import com.sxtanna.odin.compile.data.OperatorSub
 import com.sxtanna.odin.compile.data.Word
+import com.sxtanna.odin.compile.util.Interpolator
 import com.sxtanna.odin.compile.util.PeekIterator
+import com.sxtanna.odin.results.None
+import com.sxtanna.odin.results.Result
+import com.sxtanna.odin.results.Some
+import com.sxtanna.odin.results.map
 import com.sxtanna.odin.runtime.Command
 import com.sxtanna.odin.runtime.CommandClazzDefine
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
+import com.sxtanna.odin.runtime.CommandDone
 import com.sxtanna.odin.runtime.CommandFunctionAccess
 import com.sxtanna.odin.runtime.CommandFunctionDefine
 import com.sxtanna.odin.runtime.CommandGet
+import com.sxtanna.odin.runtime.CommandHead
 import com.sxtanna.odin.runtime.CommandInstanceFunctionAccess
 import com.sxtanna.odin.runtime.CommandJavaTypeDefine
 import com.sxtanna.odin.runtime.CommandLiteral
@@ -39,7 +46,9 @@ import com.sxtanna.odin.runtime.CommandPropertyDefine
 import com.sxtanna.odin.runtime.CommandPropertyResets
 import com.sxtanna.odin.runtime.CommandRedo
 import com.sxtanna.odin.runtime.CommandRoute
+import com.sxtanna.odin.runtime.CommandStackPush
 import com.sxtanna.odin.runtime.CommandStop
+import com.sxtanna.odin.runtime.CommandTail
 import com.sxtanna.odin.runtime.CommandTraitDefine
 import com.sxtanna.odin.runtime.CommandTuple
 import com.sxtanna.odin.runtime.CommandTypeQuery
@@ -54,10 +63,118 @@ import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import java.util.ArrayDeque
 
-object Typer
+object Typer : (List<TokenData>) -> List<Command>
 {
 	
-	fun pass0(toks: List<TokenData>): List<Command>
+	private val interpolate = Regex("\\$(?<exprOne>\\w+|\\{(?<exprMul>.+)})")
+	
+	private val expanders = mutableListOf<Expander>()
+	
+	init
+	{
+		expanders += Expander(
+			skipCount = 1,
+			hereMatch = { it.type == TXT && Interpolator.hasInterpolation(it.data) },
+			intoToken = {
+				
+				val outputs = mutableListOf<TokenData>()
+				val interps = Interpolator.getInterpolation(it.data)
+				
+				println("=====INTER======")
+				println(interps.joinToString("\n"))
+				println("=====INTER======")
+				
+				for ((i, interp) in interps.withIndex())
+				{
+					when (interp)
+					{
+						is Interpolator.Interpolation.Text ->
+						{
+							outputs += TokenData(TXT, interp.text)
+							
+							if (i < interps.lastIndex)
+							{
+								outputs += TokenData(OPER, "+")
+							}
+						}
+						is Interpolator.Interpolation.Expr ->
+						{
+							
+							when (val lexed = Result.of { Lexer.invoke(interp.text) }.map(this::pass0))
+							{
+								is None -> throw lexed.info
+								is Some ->
+								{
+									outputs += TokenData(PAREN_L, "(")
+									outputs += lexed.data
+									outputs += TokenData(PAREN_R, ")")
+									
+									if (i != interps.lastIndex)
+									{
+										outputs += TokenData(OPER, "+")
+									}
+								}
+							}
+						}
+					}
+				}
+				
+				// println("============================================================")
+				// println("outputs: \n${outputs.joinToString("\n")}")
+				// println("============================================================")
+				
+				outputs
+			})
+		
+		expanders += Expander(
+			skipCount = 1,
+			intoToken = { listOf(TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "+")) },
+			hereMatch = { it.type == NAME },
+			nextMatch = { it.type == OPER && it.data == "+=" })
+		
+		expanders += Expander(
+			skipCount = 1,
+			intoToken = { listOf(TokenData(PAREN_L, "("), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "+"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
+			hereMatch = { it.type == NAME },
+			nextMatch = { it.type == OPER && it.data == "++" })
+	}
+	
+	private fun pass0(data: List<TokenData>): List<TokenData>
+	{
+		val toks = mutableListOf<TokenData>()
+		val iter = PeekIterator(data)
+		
+		iter.each()
+		{ here ->
+			
+			val prev = iter.peek(amount = -2)
+			val next = iter.peek(amount = +0)
+			
+			val expanse = expanders.firstOrNull { it.matches(here, prev, next) }
+			
+			if (expanse == null)
+			{
+				toks += here
+			}
+			else
+			{
+				// println("expanding")
+				// println("===========")
+				// println("Prev: $prev")
+				// println("Here: $here")
+				// println("Next: $next")
+				// println("===========")
+				
+				toks += expanse.intoToken.invoke(here)
+				
+				iter.move(expanse.skipCount)
+			}
+		}
+		
+		return toks
+	}
+	
+	private fun pass1(toks: List<TokenData>): List<Command>
 	{
 		val cmds = mutableListOf<Command>()
 		val iter = PeekIterator(toks)
@@ -70,18 +187,103 @@ object Typer
 		return cmds
 	}
 	
-	fun pass1(prev: List<Command>): List<Command>
+	private fun pass2(data: List<Command>): List<Command>
 	{
 		val cmds = mutableListOf<Command>()
-		val iter = PeekIterator(prev)
+		val iter = PeekIterator(data)
 		
-		iter.each()
+		println("========================================================")
+		println("running pass on: ${data.joinToString("\n")}")
+		println("========================================================")
+		
+		while (!iter.empty)
 		{
-			cmds += it
-			// println(it)
+			val here = iter.next
+			val prev = iter.peek(amount = -2)
+			val next = iter.peek(amount = +0)
+			
+			if (here is CommandFunctionDefine)
+			{
+				println("pass 2 on function ${here.func.name}")
+				here.func.body = Route.of(pass2(here.func.body?.unwrap() ?: continue))
+				println("pass 2 on function ${here.func.name}")
+			}
+			
+			if (here is CommandRoute && prev is CommandPropertyAssign && next is CommandPropertyAssign)
+			{
+				println("pass 2 on route: $next")
+				
+				val body = here.route.unwrap().toMutableList()
+				body += next
+				
+				iter.move(amount = 1)
+				
+				here.route = Route.of(pass2(body))
+				println("pass 2 on route")
+			}
+			
+            // println("==============================")
+            // println("Prev: $prev")
+            // println("Here: $here")
+            // println("Next: $next")
+            // println("==============================")
+			
+			if (next is CommandHead)
+			{
+				val loop = iter.peek(amount = 1)
+				require(loop is CommandLoop)
+				{
+					"target was not loop: $loop"
+				}
+				
+				val body = loop.body.unwrap().toMutableList()
+				
+				val last = body.removeLast()
+				require(last is CommandStackPush)
+				{
+					"last statement was not a stack push: $last"
+				}
+				
+				val lastExpr = last.expr.unwrap().toMutableList()
+				
+				iter.move(amount = 2) // skip over body
+				
+				val tail = iter.peek
+				require(tail is CommandTail)
+				{
+					"target was not tail: $tail"
+				}
+				
+				iter.move(amount = 1) // skip over tail
+				
+				println("peek: ${iter.peek}")
+				
+				body.add(0, here)
+				body.addAll(1, lastExpr)
+				body.add(iter.next)
+				body.add(iter.next)
+				
+				loop.body = Route.of(body)
+				
+				cmds += loop
+				
+				continue
+			}
+			
+			cmds += here
 		}
 		
 		return cmds
+	}
+	
+	
+	override fun invoke(data: List<TokenData>): List<Command>
+	{
+		val pass0 = pass0(data)
+		val pass1 = pass1(pass0)
+		val pass2 = pass2(pass1)
+		
+		return pass2
 	}
 	
 	
@@ -108,6 +310,21 @@ object Typer
 				move(amount = -1)
 				parseShuntedExpression(cmds)
 			}
+			PAREN_L ->
+			{
+				parseShuntedExpression(cmds)
+				
+				require(peek?.type == PAREN_R)
+				
+				move(amount = 1)
+			}
+			RETURN ->
+			{
+				val expr = mutableListOf<Command>()
+				parseShuntedExpression(expr)
+				
+				cmds += CommandStackPush(Route.of(expr))
+			}
 			else    ->
 			{
 				throw IllegalStateException("token out of place: $token")
@@ -127,6 +344,7 @@ object Typer
 			OPER    ->
 			{
 				move(amount = -2)
+				
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
@@ -135,10 +353,8 @@ object Typer
 			PAREN_L ->
 			{
 				move(amount = -1)
-				val expr = mutableListOf<Command>()
-				parseShuntedExpression(expr)
 				
-				cmds += CommandRoute(Route.of(expr))
+				parseRef(cmds, data)
 			}
 			ASSIGN  ->
 			{
@@ -842,7 +1058,9 @@ object Typer
 	
 	private fun PeekIterator<TokenData>.parseShuntedExpression(cmds: MutableList<Command>)
 	{
-		cmds += shuntingYard(parseExpr())
+		val expr = parseExpr()
+		
+		cmds += shuntingYard(expr)
 	}
 	
 	private fun PeekIterator<TokenData>.parseExpr(breakOnComma: Boolean = false): List<Command>
@@ -991,9 +1209,15 @@ object Typer
 							parseWhen(expr)
 						Word.JAVA ->
 							parseJava(expr)
+						Word.LOOP ->
+						{
+							expr += CommandHead
+							parseLoop(expr)
+							expr += CommandTail
+						}
 						else      ->
 						{
-							throw UnsupportedOperationException("only the pull word is usable in expressions: $token")
+							throw UnsupportedOperationException("word isn't usable in expressions: $token")
 						}
 					}
 				}
@@ -1391,6 +1615,56 @@ object Typer
 			}
 			
 			move(amount = 1)
+		}
+	}
+	
+	
+	private data class Expander(val skipCount: Int,
+	                            val intoToken: (TokenData) -> List<TokenData>,
+	                            val hereMatch: ((TokenData) -> Boolean),
+	                            val prevMatch: ((TokenData) -> Boolean)? = null,
+	                            val nextMatch: ((TokenData) -> Boolean)? = null)
+	{
+		fun matches(here: TokenData, prev: TokenData?, next: TokenData?): Boolean
+		{
+			if (!hereMatch.invoke(here))
+			{
+				return false
+			}
+			
+			val prevMatches = if (prevMatch != null)
+			{
+				if (prev == null)
+				{
+					false
+				}
+				else
+				{
+					prevMatch.invoke(prev)
+				}
+			}
+			else
+			{
+				true
+			}
+			
+			val nextMatches = if (nextMatch != null)
+			{
+				if (next == null)
+				{
+					false
+				}
+				else
+				{
+					nextMatch.invoke(next)
+				}
+			}
+			else
+			{
+				true
+			}
+			
+			return prevMatches && nextMatches
 		}
 	}
 	

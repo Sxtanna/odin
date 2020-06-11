@@ -1,0 +1,11 @@
+val rand = java::["java.util.SplittableRandom"]
+
+var runs = 0
+var numb = rand.nextLong(1000)
+
+loop (numb < 999) {
+    runs++
+    numb = rand.nextLong(1000)
+}
+
+push "Final number is " + numb + " after " + runs + " runs."

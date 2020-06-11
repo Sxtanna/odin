@@ -1,0 +1,8 @@
+var bar = ""
+var cur = 0
+
+bar += loop (cur++ <= 20) {
+    => "="
+}
+
+push bar

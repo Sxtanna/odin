@@ -1,0 +1,9 @@
+
+
+val number = 10
+
+fun add(num0, num1: Int): Int {
+    => num0 + num1
+}
+
+push "numbers are $number and ${add(number, 5) + \" $number\"} and also not a long time"

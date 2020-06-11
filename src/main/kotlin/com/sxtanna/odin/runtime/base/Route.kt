@@ -7,6 +7,7 @@ import com.sxtanna.odin.runtime.Context
 
 data class Route(val command: Command)
 {
+	@Transient
 	var prev: Route? = null
 	var next: Route? = null
 	
@@ -18,6 +19,24 @@ data class Route(val command: Command)
 		//println("$stack\n")
 	}
 	
+	fun unwrap(): List<Command>
+	{
+		val cmds = mutableListOf<Command>()
+		
+		var here: Route? = this
+		
+		while (here != null)
+		{
+			cmds += here.command
+			
+			here = here.next
+		}
+		
+		cmds.removeFirst()
+		cmds.removeLast()
+		
+		return cmds
+	}
 	
 	override fun toString(): String
 	{
@@ -44,6 +63,7 @@ data class Route(val command: Command)
 		}
 	}
 	
+	
 	companion object
 	{
 		fun of(commands: Collection<Command>): Route
@@ -62,4 +82,5 @@ data class Route(val command: Command)
 			return routes.first()
 		}
 	}
+	
 }

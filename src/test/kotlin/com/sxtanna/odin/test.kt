@@ -3,10 +3,19 @@ package com.sxtanna.odin
 import com.sxtanna.odin.results.None
 import com.sxtanna.odin.results.Some
 
+
+fun readCodeFromFile(name: String): String
+{
+	return requireNotNull(ClassLoader.getSystemClassLoader().getResourceAsStream(name)?.bufferedReader()?.readText()?.replace("\r", ""))
+	{
+		"Could not read code from file: $name"
+	}
+}
+
+
 fun main()
 {
-	val code = ClassLoader.getSystemClassLoader().getResourceAsStream("test7.o")?.bufferedReader()?.readText()?.replace("\r", "") ?: return println("Could not read code from file!")
-	// println(code)
+	val code = readCodeFromFile("test10.o")
 	
 	when (val result = Odin.proc(code))
 	{

@@ -1,5 +1,8 @@
 package com.sxtanna.odin
 
+import com.sxtanna.korm.Korm
+import com.sxtanna.korm.data.option.Options
+import com.sxtanna.korm.writer.KormWriter
 import com.sxtanna.odin.compile.Lexer
 import com.sxtanna.odin.compile.Typer
 import com.sxtanna.odin.results.None
@@ -17,11 +20,20 @@ import kotlin.time.measureTimedValue
 object Odin
 {
 	
+	private val korm = Korm(writer = KormWriter(1, Options.max()))
+	
+	init
+	{
+		korm.pushWith<Class<*>> { writer, data ->
+			writer.writeBase(data?.simpleName ?: "unknown")
+		}
+	}
+	
 	fun proc(code: String, cont: Context? = null): Result<Context>
 	{
 		val cont = cont ?: Context()
 		
-		when (val read = read(code, printTime = true))
+		when (val read = read(code, printTime = true, printInfo = true))
 		{
 			is None ->
 			{
@@ -29,6 +41,8 @@ object Odin
 			}
 			is Some ->
 			{
+				// println(korm.push(read.data))
+				
 				when (val data = eval(cont, read.data, printTime = true))
 				{
 					is None ->
@@ -65,7 +79,7 @@ object Odin
 	{
 		val (lexed, lexerTime) = measureTimedValue()
 		{
-			Result.of { Lexer.pass0(code) }
+			Result.of { Lexer.invoke(code) }
 		}
 		
 		if (printTime)
@@ -79,7 +93,7 @@ object Odin
 		
 		val (typed, typerTime) = measureTimedValue()
 		{
-			lexed.map(Typer::pass0).map(Typer::pass1)
+			lexed.map(Typer::invoke)
 		}
 		
 		if (printTime)

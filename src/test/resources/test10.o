@@ -1,0 +1,17 @@
+
+val barString = "="
+
+fun printWithBars(text: Txt, barLength: Int) {
+
+    var bar = ""
+    var cur = 0
+
+    bar += loop (cur++ <= barLength) {
+        => "\\$barString/"
+    }
+
+    push "$bar\n$text\n$bar"
+}
+
+
+printWithBars("Hello World!", 10)

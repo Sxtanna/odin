@@ -18,10 +18,11 @@ import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 import java.lang.reflect.Method
 import java.util.Scanner
-import kotlin.time.ExperimentalTime
 
 sealed class Command
 {
+	val uuid = this::class.java.simpleName
+	
 	abstract fun eval(stack: Stack, context: Context)
 	
 	
@@ -49,6 +50,40 @@ object CommandStop : Command()
 	}
 	
 	object StopException : Exception()
+}
+
+object CommandHead : Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		stack.push(this)
+	}
+}
+
+object CommandTail : Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		val data = mutableListOf<Any>()
+		
+		while (true)
+		{
+			var value = stack.pull()
+			if (value is CommandHead)
+			{
+				break
+			}
+			
+			if (value is Value)
+			{
+				value = value.data
+			}
+			
+			data += value
+		}
+		
+		stack.push(data)
+	}
 }
 
 data class CommandRedo(val count: Int)
@@ -96,7 +131,7 @@ data class CommandPropertyAssign(val name: String)
 				{
 					require(property.type.matches(value.type))
 					{
-						"expected type ${property.type}, got type ${value.type.back}"
+						"property ${property.name} expected type ${property.type}, got type ${value.type.back}"
 					}
 				}
 				
@@ -131,12 +166,12 @@ data class CommandPropertyAccess(val name: String)
 	{
 		val property = requireNotNull(context.findProp(name))
 		{
-			"property $name has not been defined"
+			"property '$name' has not been defined"
 		}
 		
 		val value = requireNotNull(property.data)
 		{
-			"property $name has not been assigned"
+			"property '$name' has not been assigned"
 		}
 		
 		stack.push(value)
@@ -208,6 +243,19 @@ data class CommandClazzCreate(val clazzName: String)
 		repeat(clazz.types.size)
 		{
 			val trait = stack.peek()
+		}
+	}
+}
+
+data class CommandStackPush(var expr: Route)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		val value = Odin.eval(context, expr, stack)
+		if (value is None)
+		{
+			throw value.info
 		}
 	}
 }
@@ -441,7 +489,7 @@ data class CommandSet(val index: Route)
 	}
 }
 
-data class CommandRoute(val route: Route)
+data class CommandRoute(var route: Route)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
@@ -458,7 +506,7 @@ data class CommandRoute(val route: Route)
 	}
 }
 
-data class CommandLoop(val expr: Route, val body: Route)
+data class CommandLoop(val expr: Route, var body: Route)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
@@ -541,7 +589,7 @@ data class CommandFunctionAccess(val name: String)
 		val push = func.push
 		val body = func.body
 		
-		val funcStack = Stack()
+		var funcStack = Stack()
 		
 		for (entry in pull)
 		{
@@ -549,6 +597,8 @@ data class CommandFunctionAccess(val name: String)
 			funcStack.push(stack.pull())
 			//println("stack: $stack")
 		}
+		
+		funcStack = funcStack.flip()
 		
 		//println("func stack0: $funcStack")
 		

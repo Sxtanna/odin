@@ -24,6 +24,15 @@ class Stack private constructor(private val stack: Deque<Any>)
 		stack.push(data)
 	}
 	
+	fun flip(): Stack
+	{
+		val stack = ArrayDeque<Any>()
+		
+		this.stack.forEach(stack::push)
+		
+		return Stack(stack)
+	}
+	
 	override fun toString(): String
 	{
 		return stack.toString()

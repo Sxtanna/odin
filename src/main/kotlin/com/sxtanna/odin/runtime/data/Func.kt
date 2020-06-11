@@ -11,4 +11,10 @@ data class Func(val name: String)
 	val pull = mutableMapOf<String, Types>()
 	val push = mutableMapOf<String, Types>() // I will probably never make this fully operational
 	
+	
+	override fun toString(): String
+	{
+		return "fun '$name'($pull): $push { \n$body \n}"
+	}
+	
 }

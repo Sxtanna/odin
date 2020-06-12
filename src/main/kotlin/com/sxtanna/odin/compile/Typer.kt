@@ -73,16 +73,12 @@ object Typer : (List<TokenData>) -> List<Command>
 	init
 	{
 		expanders += Expander(
-			skipCount = 1,
+			skipCount = 0,
 			hereMatch = { it.type == TXT && Interpolator.hasInterpolation(it.data) },
 			intoToken = {
 				
 				val outputs = mutableListOf<TokenData>()
 				val interps = Interpolator.getInterpolation(it.data)
-				
-				println("=====INTER======")
-				println(interps.joinToString("\n"))
-				println("=====INTER======")
 				
 				for ((i, interp) in interps.withIndex())
 				{
@@ -119,10 +115,6 @@ object Typer : (List<TokenData>) -> List<Command>
 					}
 				}
 				
-				// println("============================================================")
-				// println("outputs: \n${outputs.joinToString("\n")}")
-				// println("============================================================")
-				
 				outputs
 			})
 		
@@ -158,13 +150,6 @@ object Typer : (List<TokenData>) -> List<Command>
 			}
 			else
 			{
-				// println("expanding")
-				// println("===========")
-				// println("Prev: $prev")
-				// println("Here: $here")
-				// println("Next: $next")
-				// println("===========")
-				
 				toks += expanse.intoToken.invoke(here)
 				
 				iter.move(expanse.skipCount)
@@ -192,9 +177,6 @@ object Typer : (List<TokenData>) -> List<Command>
 		val cmds = mutableListOf<Command>()
 		val iter = PeekIterator(data)
 		
-		println("========================================================")
-		println("running pass on: ${data.joinToString("\n")}")
-		println("========================================================")
 		
 		while (!iter.empty)
 		{
@@ -204,29 +186,18 @@ object Typer : (List<TokenData>) -> List<Command>
 			
 			if (here is CommandFunctionDefine)
 			{
-				println("pass 2 on function ${here.func.name}")
 				here.func.body = Route.of(pass2(here.func.body?.unwrap() ?: continue))
-				println("pass 2 on function ${here.func.name}")
 			}
 			
 			if (here is CommandRoute && prev is CommandPropertyAssign && next is CommandPropertyAssign)
 			{
-				println("pass 2 on route: $next")
-				
 				val body = here.route.unwrap().toMutableList()
 				body += next
 				
 				iter.move(amount = 1)
 				
 				here.route = Route.of(pass2(body))
-				println("pass 2 on route")
 			}
-			
-            // println("==============================")
-            // println("Prev: $prev")
-            // println("Here: $here")
-            // println("Next: $next")
-            // println("==============================")
 			
 			if (next is CommandHead)
 			{
@@ -255,8 +226,6 @@ object Typer : (List<TokenData>) -> List<Command>
 				}
 				
 				iter.move(amount = 1) // skip over tail
-				
-				println("peek: ${iter.peek}")
 				
 				body.add(0, here)
 				body.addAll(1, lastExpr)

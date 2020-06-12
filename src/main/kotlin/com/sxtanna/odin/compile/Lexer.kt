@@ -274,6 +274,30 @@ object Lexer : (String) -> List<TokenData>
 				}
 				in symbol ->
 				{
+					if (c == '/')
+					{
+						
+						if (iter.peek == '/')
+						{
+							while (iter.peek != '\n')
+							{
+								iter.move(amount = 1)
+							}
+							return@each
+						}
+						
+						if (iter.peek == '*')
+						{
+							while (iter.peek(amount = 0) != '*' || iter.peek(amount = 1) != '/')
+							{
+								iter.move(amount = 1)
+							}
+							
+							iter.move(amount = 2)
+							return@each
+						}
+					}
+					
 					add(TokenType.OPER, c)
 				}
 			}

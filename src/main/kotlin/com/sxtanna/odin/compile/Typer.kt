@@ -1213,18 +1213,53 @@ object Typer : (List<TokenData>) -> List<Command>
 	{
 		var token: TokenData
 		
-		token = next
-		require(token.type == TYPE || token.type == PAREN_L)
-		{
-			"type must be TYPE or PAREN_L | $token"
-		}
-		
-		if (token.type == TYPE)
-		{
-			return Basic(token.data)
-		}
-		
+		var tuple = false
 		val types = mutableListOf<Types>()
+		
+		fun internalParseType(): List<Types>
+		{
+			token = next
+			require(token.type == TYPE || token.type == PAREN_L)
+			{
+				"type must be TYPE or PAREN_L | $token"
+			}
+			
+			if (token.type == TYPE)
+			{
+				val basic = Basic(token.data)
+				
+				if (peek?.type != BOUND)
+				{
+					return listOf(basic)
+				}
+				
+				check(tuple)
+				{
+					"shorthand tuple syntax must be surrounded by parens"
+				}
+				
+				move(amount = 1)
+				
+				val value = resolveValue(next)
+				require(value.first == "Int")
+				{
+					"shorthand tuple syntax must have a whole number"
+				}
+				
+				repeat((value.second as Long).toInt())
+				{
+					types += basic
+				}
+			}
+			
+			return emptyList()
+		}
+		
+		types += internalParseType()
+		if (types.size == 1)
+		{
+			return types.single()
+		}
 		
 		while (!empty)
 		{
@@ -1232,7 +1267,9 @@ object Typer : (List<TokenData>) -> List<Command>
 			
 			if (token.type == TYPE || token.type == PAREN_L)
 			{
-				types += parseType()
+				tuple = true
+				types += internalParseType()
+				tuple = false
 				continue
 			}
 			
@@ -1257,6 +1294,8 @@ object Typer : (List<TokenData>) -> List<Command>
 				move(amount = 1) // skip paren r
 				break
 			}
+			
+			throw IllegalStateException("token out of place: $token")
 		}
 		
 		return Tuple(types)

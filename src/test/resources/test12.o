@@ -1,0 +1,32 @@
+
+
+fun joinToString(data: All, split: Txt): Txt {
+
+    var index = -1
+    var value = ""
+
+    value += loop (index++ < data.size()) {
+        |> "$index: ${data[index]}$split"
+    }
+
+    => value
+}
+
+val list = java::["java.util.ArrayList"]
+val rand = java::["java.util.SplittableRandom"]
+
+
+loop (list.size() < 10) {
+    list.add(rand.nextInt(100))
+}
+
+// push list
+
+val map = java::["java.util.HashMap"]
+
+loop (map.size() < 10) {
+    map.put(map.size(), rand.nextInt(1000))
+}
+
+push ""
+push joinToString(map, "\n")

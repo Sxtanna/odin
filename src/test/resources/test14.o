@@ -1,0 +1,6 @@
+var repeat = 0
+val random = java::["java.util.SplittableRandom"]
+
+loop (repeat++ <= 1000) {
+    push random.nextDouble(0.0, 1000.0)
+}

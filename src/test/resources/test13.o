@@ -1,0 +1,13 @@
+
+
+fun add(nums: (Int, Int)): (Int, Int, Int)
+{
+    => (nums[0], nums[1], nums[0] + nums[1])
+}
+
+
+val result = add((10, 20))
+
+push "\n\n=========="
+push "${result[0]} + ${result[1]} = ${result[2]}"
+push "==========\n\n"

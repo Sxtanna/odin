@@ -1,0 +1,12 @@
+
+
+val value0: (Int::2, Dec::2) = (10, 20, 1.0, 2.0)
+
+push type(value0)
+
+fun sum(values: (Int::2)): Int
+{
+    => values[0] + values[1]
+}
+
+push sum((value0[0], value0[1]))

@@ -1,8 +1,12 @@
-var bar = ""
-var cur = 0
+fun repeat(text: Txt, amount: Int): Txt {
+    var count = 0
+    var value = ""
 
-bar += loop (cur++ <= 20) {
-    => "="
+    value += loop (count++ <= amount) {
+        |> text
+    }
+
+    => value
 }
 
-push bar
+push repeat("T", /* HELLO */5)

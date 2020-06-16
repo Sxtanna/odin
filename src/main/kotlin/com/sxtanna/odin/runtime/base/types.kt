@@ -33,7 +33,7 @@ data class Basic(override val name: String)
 {
 	override fun matches(type: Types): Boolean
 	{
-		return this == type
+		return name == "All" || this == type
 	}
 	
 	
@@ -63,7 +63,7 @@ data class Tuple(val part: List<Types>)
 			val thisPart = this.part[index]
 			val thatPart = type.part[index]
 			
-			if (thisPart.matches(thatPart))
+			if (!thisPart.matches(thatPart))
 			{
 				return false
 			}

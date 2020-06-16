@@ -66,9 +66,8 @@ import java.util.ArrayDeque
 object Typer : (List<TokenData>) -> List<Command>
 {
 	
-	private val interpolate = Regex("\\$(?<exprOne>\\w+|\\{(?<exprMul>.+)})")
-	
 	private val expanders = mutableListOf<Expander>()
+	
 	
 	init
 	{
@@ -130,6 +129,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			hereMatch = { it.type == NAME },
 			nextMatch = { it.type == OPER && it.data == "++" })
 	}
+	
 	
 	private fun pass0(data: List<TokenData>): List<TokenData>
 	{

@@ -1286,56 +1286,9 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseLit(cmds: MutableList<Command>, token: TokenData)
 	{
-		val data = when (token.type)
-		{
-			NUM  ->
-			{
-				if ('.' !in token.data)
-					token.data.toLong()
-				else
-					token.data.toDouble()
-			}
-			LET  ->
-			{
-				token.data.single()
-			}
-			TXT  ->
-			{
-				token.data
-			}
-			BIT  ->
-			{
-				when (token.data)
-				{
-					"true"  ->
-						true
-					"false" ->
-						false
-					else    ->
-					{
-						throw IllegalStateException("Invalid bit literal: $token")
-					}
-				}
-			}
-			else ->
-			{
-				throw IllegalStateException("Invalid literal: $token")
-			}
-		}
+		val value = resolveValue(token)
 		
-		val type = when (data)
-		{
-			is Long   ->
-				"Int"
-			is Double ->
-				"Dec"
-			else      ->
-			{
-				token.type.name.toLowerCase().capitalize()
-			}
-		}
-		
-		cmds += CommandLiteral(type, data)
+		cmds += CommandLiteral(value.first, value.second)
 	}
 	
 	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData, assigned: Boolean = false)
@@ -1511,6 +1464,60 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		cmds += CommandPropertyAccess(data.data)
 		cmds += CommandInstanceFunctionAccess(funcName, params.size)
+	}
+	
+	private fun resolveValue(token: TokenData): Pair<String, Any>
+	{
+		val data = when (token.type)
+		{
+			NUM  ->
+			{
+				if ('.' !in token.data)
+					token.data.toLong()
+				else
+					token.data.toDouble()
+			}
+			LET  ->
+			{
+				token.data.single()
+			}
+			TXT  ->
+			{
+				token.data
+			}
+			BIT  ->
+			{
+				when (token.data)
+				{
+					"true"  ->
+						true
+					"false" ->
+						false
+					else    ->
+					{
+						throw IllegalStateException("Invalid bit literal: $token")
+					}
+				}
+			}
+			else ->
+			{
+				throw IllegalStateException("Invalid literal: $token")
+			}
+		}
+		
+		val type = when (data)
+		{
+			is Long   ->
+				"Int"
+			is Double ->
+				"Dec"
+			else      ->
+			{
+				token.type.name.toLowerCase().capitalize()
+			}
+		}
+		
+		return type to data
 	}
 	
 	

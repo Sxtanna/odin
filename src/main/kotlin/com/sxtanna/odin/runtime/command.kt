@@ -260,6 +260,23 @@ data class CommandStackPush(var expr: Route)
 	}
 }
 
+data class CommandStackPull(val pull: Boolean)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		requireNotNull(stack.peek())
+		{
+			"stack is empty"
+		}
+		
+		if (pull)
+		{
+			stack.pull()
+		}
+	}
+}
+
 data class CommandConsolePush(val newline: Boolean)
 	: Command()
 {

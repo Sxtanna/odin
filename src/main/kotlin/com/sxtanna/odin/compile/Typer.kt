@@ -30,7 +30,6 @@ import com.sxtanna.odin.runtime.Command
 import com.sxtanna.odin.runtime.CommandClazzDefine
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
-import com.sxtanna.odin.runtime.CommandDone
 import com.sxtanna.odin.runtime.CommandFunctionAccess
 import com.sxtanna.odin.runtime.CommandFunctionDefine
 import com.sxtanna.odin.runtime.CommandGet
@@ -46,6 +45,7 @@ import com.sxtanna.odin.runtime.CommandPropertyDefine
 import com.sxtanna.odin.runtime.CommandPropertyResets
 import com.sxtanna.odin.runtime.CommandRedo
 import com.sxtanna.odin.runtime.CommandRoute
+import com.sxtanna.odin.runtime.CommandStackPull
 import com.sxtanna.odin.runtime.CommandStackPush
 import com.sxtanna.odin.runtime.CommandStop
 import com.sxtanna.odin.runtime.CommandTail
@@ -287,12 +287,16 @@ object Typer : (List<TokenData>) -> List<Command>
 				
 				move(amount = 1)
 			}
-			RETURN ->
+			STACK_PUSH ->
 			{
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
 				cmds += CommandStackPush(Route.of(expr))
+			}
+			STACK_PULL ->
+			{
+				cmds += CommandStackPull(true)
 			}
 			else    ->
 			{
@@ -1189,6 +1193,10 @@ object Typer : (List<TokenData>) -> List<Command>
 							throw UnsupportedOperationException("word isn't usable in expressions: $token")
 						}
 					}
+				}
+				STACK_PULL ->
+				{
+					expr += CommandStackPull(false)
 				}
 				else    ->
 				{

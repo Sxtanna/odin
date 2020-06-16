@@ -12,12 +12,22 @@ object Lexer : (String) -> List<TokenData>
 	private val lower = 'a'..'z'
 	private val upper = 'A'..'Z'
 	
-	private val symbol = setOf('+', '-', '/', '*', '<', '>', '!', '&')
+	private val symbol = setOf('+', '-', '/', '*', '<', '>', '!', '&', '|')
 	
 	private val collapses = mutableListOf<Collapse>()
 	
 	init
 	{
+		collapses += Collapse(skipCount = 1,
+		                     intoToken = { TokenData(TokenType.STACK_PULL, "<|") },
+		                     hereMatch = { it.type == TokenType.OPER && it.data == "<" },
+		                     nextMatch = { it.type == TokenType.OPER && it.data == "|" })
+		
+		collapses += Collapse(skipCount = 1,
+		                      intoToken = { TokenData(TokenType.STACK_PUSH, "|>") },
+		                      hereMatch = { it.type == TokenType.OPER && it.data == "|" },
+		                      nextMatch = { it.type == TokenType.OPER && it.data == ">" })
+		
 		collapses += Collapse(skipCount = 1,
 		                      intoToken = { TokenData(TokenType.OPER, "++") },
 		                      hereMatch = { it.type == TokenType.OPER && it.data == "+" },

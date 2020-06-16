@@ -30,4 +30,7 @@ enum class TokenType
 	PAREN_L, // '('
 	PAREN_R, // ')'
 	
+	STACK_PULL, // '<|'
+	STACK_PUSH, // '|>'
+	
 }

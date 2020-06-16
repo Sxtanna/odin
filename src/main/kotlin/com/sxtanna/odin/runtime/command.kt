@@ -593,10 +593,6 @@ data class CommandFunctionAccess(val name: String)
 		
 		context.joinScope(Scope(func.name))
 		
-		//println("found function: $func")
-		//println("stack: $stack")
-		// println("body: ${func.body}")
-		
 		val pull = func.pull
 		val push = func.push
 		val body = func.body
@@ -605,15 +601,10 @@ data class CommandFunctionAccess(val name: String)
 		
 		for (entry in pull)
 		{
-			//println("pulling: ${entry.key}")
 			funcStack.push(stack.pull())
-			//println("stack: $stack")
 		}
 		
 		funcStack = funcStack.flip()
-		
-		//println("func stack0: $funcStack")
-		
 		
 		val result = if (body == null)
 		{
@@ -623,8 +614,6 @@ data class CommandFunctionAccess(val name: String)
 		{
 			Odin.eval(context, body, funcStack)
 		}
-		
-		//println("func stack1: $funcStack")
 		
 		if (result != null && result is Some)
 		{
@@ -692,7 +681,6 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		var funcs = type.declaredMethods.filter { it.name == name }
 		if (funcs.isEmpty())
 		{
-			println("none")
 			return null
 		}
 		

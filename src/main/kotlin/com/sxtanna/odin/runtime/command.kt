@@ -671,7 +671,20 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		
 		method.isAccessible = true
 		
-		val result = method.invoke(type, *params)
+		var result = method.invoke(type, *params)
+		
+		when (result)
+		{
+			is Int   ->
+			{
+				result = result.toLong()
+			}
+			is Float ->
+			{
+				result = result.toDouble()
+			}
+		}
+		
 		
 		stack.push(Value(Type.ALL, result ?: Unit))
 	}

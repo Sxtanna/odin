@@ -449,11 +449,6 @@ data class CommandGet(val indexExpr: Route)
 			index = index.data
 		}
 		
-		index = requireNotNull((index as? Long)?.toInt())
-		{
-			"index value must be a long"
-		}
-		
 		var access = stack.pull()
 		if (access is Value)
 		{
@@ -468,11 +463,11 @@ data class CommandGet(val indexExpr: Route)
 			}
 			is List<*>      ->
 			{
-				access[index]
+				access[index.toString().toInt()]
 			}
 			is CharSequence ->
 			{
-				access[index]
+				access[index.toString().toInt()]
 			}
 			else            ->
 			{

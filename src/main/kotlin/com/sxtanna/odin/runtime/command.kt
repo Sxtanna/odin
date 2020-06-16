@@ -744,6 +744,7 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 				
 				pass[index] = when (methType)
 				{
+					Any::class.java    -> passData
 					Byte::class.java   -> passData.toByte()
 					Short::class.java  -> passData.toShort()
 					Int::class.java    -> passData.toInt()

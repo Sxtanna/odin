@@ -35,6 +35,12 @@ object Lexer : (String) -> List<TokenData>
 		                      nextMatch = { it.type == TokenType.OPER && it.data == "+" })
 		
 		collapses += Collapse(skipCount = 1,
+		                      intoToken = { TokenData(TokenType.OPER, "--") },
+		                      hereMatch = { it.type == TokenType.OPER && it.data == "-" },
+		                      prevMatch = { it.type == TokenType.NAME },
+		                      nextMatch = { it.type == TokenType.OPER && it.data == "-" })
+		
+		collapses += Collapse(skipCount = 1,
 		                      intoToken = { TokenData(TokenType.OPER, "+=") },
 		                      hereMatch = { it.type == TokenType.OPER && it.data == "+" },
 		                      nextMatch = { it.type == TokenType.ASSIGN })

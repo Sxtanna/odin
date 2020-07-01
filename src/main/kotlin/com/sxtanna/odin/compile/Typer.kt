@@ -128,6 +128,12 @@ object Typer : (List<TokenData>) -> List<Command>
 			intoToken = { listOf(TokenData(PAREN_L, "("), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "+"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
 			hereMatch = { it.type == NAME },
 			nextMatch = { it.type == OPER && it.data == "++" })
+		
+		expanders += Expander(
+			skipCount = 1,
+			intoToken = { listOf(TokenData(PAREN_L, "("), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "-"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
+			hereMatch = { it.type == NAME },
+			nextMatch = { it.type == OPER && it.data == "--" })
 	}
 	
 	

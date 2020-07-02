@@ -38,6 +38,7 @@ data class Route(val command: Command)
 		return cmds
 	}
 	
+	
 	override fun toString(): String
 	{
 		return buildString()
@@ -61,6 +62,22 @@ data class Route(val command: Command)
 				append("]")
 			}
 		}
+	}
+	
+	
+	override fun equals(other: Any?): Boolean
+	{
+		if (this === other) return true
+		if (other !is Route) return false
+		
+		if (unwrap() != other.unwrap()) return false
+		
+		return true
+	}
+	
+	override fun hashCode(): Int
+	{
+		return unwrap().hashCode()
 	}
 	
 	

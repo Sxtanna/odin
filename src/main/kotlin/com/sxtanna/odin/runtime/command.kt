@@ -650,10 +650,10 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		var type = stack.pull()
-		if (type is Value)
+		var receiver = stack.pull()
+		if (receiver is Value)
 		{
-			type = type.data
+			receiver = receiver.data
 		}
 		
 		val args = mutableListOf<Any>()
@@ -668,14 +668,14 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			args += data
 		}
 		
-		val (method, params) = requireNotNull(resolveMethodCallJ(type.javaClass, name, args))
+		val (method, params) = requireNotNull(resolveMethodCallJ(receiver.javaClass, name, args))
 		{
 			"could not resolve method $name"
 		}
 		
 		method.isAccessible = true
 		
-		var result = method.invoke(type, *params)
+		var result = method.invoke(receiver, *params)
 		
 		when (result)
 		{

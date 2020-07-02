@@ -485,12 +485,13 @@ data class CommandGet(val indexExpr: Route)
 			{
 				data.type
 			}
-			else     ->
-			{
-				Type.ALL
-			}
+			is Long -> Type.INT
+			is Double -> Type.DEC
+			is String -> Type.TXT
+			is Char -> Type.LET
+			is Boolean -> Type.BIT
+			else -> Type.ALL
 		}
-		
 		
 		stack.push(Value(type, data ?: Unit))
 	}
@@ -689,8 +690,17 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			}
 		}
 		
+		val type = when (result)
+		{
+			is Long -> Type.INT
+			is Double -> Type.DEC
+			is String -> Type.TXT
+			is Char -> Type.LET
+			is Boolean -> Type.BIT
+			else -> Type.ALL
+		}
 		
-		stack.push(Value(Type.ALL, result ?: Unit))
+		stack.push(Value(type, result ?: Unit))
 	}
 	
 	private fun resolveMethodCallJ(type: Class<*>, name: String, args: List<Any>): Pair<Method, Array<Any>>?

@@ -264,28 +264,25 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseMain(cmds: MutableList<Command>)
 	{
+		ignoreNewLines()
 		val token = next
 		
 		when (token.type)
 		{
-			NEWLINE ->
-			{
-				return
-			}
-			WORD    ->
+			WORD       ->
 			{
 				parseWord(cmds, token)
 			}
-			NAME    ->
+			NAME       ->
 			{
 				parseName(cmds, token)
 			}
-			NUM     ->
+			NUM        ->
 			{
 				move(amount = -1)
 				parseShuntedExpression(cmds)
 			}
-			PAREN_L ->
+			PAREN_L    ->
 			{
 				parseShuntedExpression(cmds)
 				
@@ -304,7 +301,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			{
 				cmds += CommandStackPull(true)
 			}
-			else    ->
+			else       ->
 			{
 				throw IllegalStateException("token out of place: $token")
 			}

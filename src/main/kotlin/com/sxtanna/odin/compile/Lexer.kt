@@ -123,6 +123,7 @@ object Lexer : (String) -> List<TokenData>
 			char += value.length + (if (type == TokenType.LET || type == TokenType.TXT) 2 else 0)
 		}
 		
+		
 		iter.each()
 		{ c ->
 			when (c)
@@ -356,12 +357,6 @@ object Lexer : (String) -> List<TokenData>
 			
 			val prev = iter.peek(amount = -2)
 			val next = iter.peek(amount = +0)
-			
-			// println("===========")
-			// println("Prev: $prev")
-			// println("Here: $here")
-			// println("Next: $next")
-			// println("===========")
 			
 			val collapse = collapses.firstOrNull { it.matches(here, prev, next) }
 			

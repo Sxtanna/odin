@@ -522,16 +522,13 @@ data class CommandGet(val indexExpr: Route)
 		
 		val type = when (data)
 		{
-			is Value ->
-			{
-				data.type
-			}
-			is Long -> Type.INT
-			is Double -> Type.DEC
-			is String -> Type.TXT
-			is Char -> Type.LET
+			is Value   -> data.type
+			is Long    -> Type.INT
+			is Double  -> Type.DEC
+			is String  -> Type.TXT
+			is Char    -> Type.LET
 			is Boolean -> Type.BIT
-			else -> Type.ALL
+			else       -> Type.ALL
 		}
 		
 		stack.push(Value(type, data ?: Unit))
@@ -732,12 +729,12 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		
 		val type = when (result)
 		{
-			is Long -> Type.INT
-			is Double -> Type.DEC
-			is String -> Type.TXT
-			is Char -> Type.LET
+			is Long    -> Type.INT
+			is Double  -> Type.DEC
+			is String  -> Type.TXT
+			is Char    -> Type.LET
 			is Boolean -> Type.BIT
-			else -> Type.ALL
+			else       -> Type.ALL
 		}
 		
 		stack.push(Value(type, result ?: Unit))

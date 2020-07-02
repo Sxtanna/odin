@@ -378,7 +378,7 @@ object Typer : (List<TokenData>) -> List<Command>
 				parsePull(cmds)
 			Word.WHEN  ->
 				parseWhen(cmds)
-			Word.CASE ->
+			Word.CASE  ->
 				parseCase(cmds)
 			Word.TYPE  ->
 				parseTypeQuery(cmds)
@@ -421,7 +421,6 @@ object Typer : (List<TokenData>) -> List<Command>
 		{
 			"property missing name"
 		}
-		
 		
 		val prop = Prop(token.data, mutable)
 		cmds += CommandPropertyDefine(prop)
@@ -1164,9 +1163,9 @@ object Typer : (List<TokenData>) -> List<Command>
 				NUM,
 				LET,
 				TXT,
-				BIT     ->
+				BIT        ->
 					parseLit(expr, token)
-				NAME    ->
+				NAME       ->
 				{
 					if (peek?.type != ASSIGN)
 					{
@@ -1178,9 +1177,9 @@ object Typer : (List<TokenData>) -> List<Command>
 						expr += CommandPropertyAccess(token.data)
 					}
 				}
-				TYPE    ->
+				TYPE       ->
 					parseNew(expr, token)
-				OPER    ->
+				OPER       ->
 				{
 					val oper = when (token.data)
 					{
@@ -1218,7 +1217,7 @@ object Typer : (List<TokenData>) -> List<Command>
 					
 					expr += CommandOperate(oper)
 				}
-				COMMA   ->
+				COMMA      ->
 				{
 					require(open > 0)
 					{
@@ -1242,12 +1241,12 @@ object Typer : (List<TokenData>) -> List<Command>
 					expr += CommandRoute(Route.of(cmds.flatten()))
 					expr += CommandTuple(cmds.size)
 				}
-				PAREN_L ->
+				PAREN_L    ->
 				{
 					open++
 					expr += CommandOperate(Oper.SOS)
 				}
-				PAREN_R ->
+				PAREN_R    ->
 				{
 					if (open == 0)
 					{
@@ -1258,12 +1257,12 @@ object Typer : (List<TokenData>) -> List<Command>
 					open--
 					expr += CommandOperate(Oper.EOS)
 				}
-				BRACK_L ->
+				BRACK_L    ->
 				{
 					move(amount = -1)
 					parseInd(expr)
 				}
-				WORD    ->
+				WORD       ->
 				{
 					when (Word.find(token.data))
 					{
@@ -1293,7 +1292,7 @@ object Typer : (List<TokenData>) -> List<Command>
 				{
 					expr += CommandStackPull(false)
 				}
-				else    ->
+				else       ->
 				{
 					println(expr)
 					throw UnsupportedOperationException("token out of place $token")
@@ -1423,7 +1422,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		{
 			TYPE    -> parseBasicType()
 			PAREN_L -> parseTupleType()
-			else ->
+			else    ->
 			{
 				throw IllegalStateException("token out of place: $peek")
 			}
@@ -1493,6 +1492,8 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		ignoreNewLines()
 		
+		val body = mutableListOf<Command>()
+		
 		while (!empty)
 		{
 			token = next
@@ -1512,7 +1513,6 @@ object Typer : (List<TokenData>) -> List<Command>
 				
 				println("$name: $expr")
 			}
-			
 		}
 		
 	}

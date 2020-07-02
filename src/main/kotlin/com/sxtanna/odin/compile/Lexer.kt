@@ -19,9 +19,9 @@ object Lexer : (String) -> List<TokenData>
 	init
 	{
 		collapses += Collapse(skipCount = 1,
-		                     intoToken = { TokenData(TokenType.STACK_PULL, "<|") },
-		                     hereMatch = { it.type == TokenType.OPER && it.data == "<" },
-		                     nextMatch = { it.type == TokenType.OPER && it.data == "|" })
+		                      intoToken = { TokenData(TokenType.STACK_PULL, "<|") },
+		                      hereMatch = { it.type == TokenType.OPER && it.data == "<" },
+		                      nextMatch = { it.type == TokenType.OPER && it.data == "|" })
 		
 		collapses += Collapse(skipCount = 1,
 		                      intoToken = { TokenData(TokenType.STACK_PUSH, "|>") },

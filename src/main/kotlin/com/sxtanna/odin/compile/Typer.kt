@@ -1306,34 +1306,21 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseType(): Types
 	{
-		var token: TokenData
-		
 		var tuple = false
-		val types = mutableListOf<Types>()
 		
-		fun internalParseType(): List<Types>
+		fun parseBasicType(): Types
 		{
-			token = next
-			require(token.type == TYPE || token.type == PAREN_L)
-			{
-				"type must be TYPE or PAREN_L | $token"
-			}
 			
-			if (token.type == TYPE)
+			fun parseTupleTypeShortHand(basic: Basic): Types
 			{
-				val basic = Basic(token.data)
-				
-				if (peek?.type != BOUND)
-				{
-					return listOf(basic)
-				}
-				
 				check(tuple)
 				{
 					"shorthand tuple syntax must be surrounded by parens"
 				}
 				
 				move(amount = 1)
+				
+				val types = mutableListOf<Types>()
 				
 				val value = resolveValue(next)
 				require(value.first == "Int")
@@ -1345,55 +1332,102 @@ object Typer : (List<TokenData>) -> List<Command>
 				{
 					types += basic
 				}
+				
+				
+				return Tuple(types)
 			}
 			
-			return emptyList()
-		}
-		
-		types += internalParseType()
-		if (types.size == 1)
-		{
-			return types.single()
-		}
-		
-		while (!empty)
-		{
-			token = peek ?: break
+			val next = next
 			
-			if (token.type == TYPE || token.type == PAREN_L)
+			require(next.type == TYPE)
 			{
-				tuple = true
-				types += internalParseType()
-				tuple = false
-				continue
+				"basic type must be a type"
 			}
 			
-			if (token.type == COMMA)
+			val basic = Basic(next.data)
+			
+			if (peek?.type != BOUND)
 			{
-				require(types.isNotEmpty())
+				return basic
+			}
+			
+			return parseTupleTypeShortHand(basic)
+		}
+		
+		fun parseTupleType(): Types
+		{
+			val types = mutableListOf<Types>()
+			
+			require(next.type == PAREN_L)
+			{
+				"tuple type must begin with paren l"
+			}
+			
+			while (!empty)
+			{
+				val next = peek ?: break
+				
+				if (next.type == TYPE)
 				{
-					"first value must be a type"
+					tuple = true
+					val basic = parseBasicType()
+					tuple = false
+					
+					if (basic is Tuple)
+					{
+						types += basic.part
+					}
+					else
+					{
+						types += basic
+					}
+					
+					continue
 				}
 				
-				move(amount = 1) // skip comma
-				continue
-			}
-			
-			if (token.type == PAREN_R)
-			{
-				require(types.isNotEmpty())
+				if (next.type == PAREN_L)
 				{
-					"tuple must contain types"
+					types += parseTupleType()
+					continue
 				}
 				
-				move(amount = 1) // skip paren r
-				break
+				if (next.type == COMMA)
+				{
+					require(types.isNotEmpty())
+					{
+						"first value must be a type"
+					}
+					
+					move(amount = 1) // skip comma
+					continue
+				}
+				
+				if (next.type == PAREN_R)
+				{
+					require(types.isNotEmpty())
+					{
+						"tuple must contain types"
+					}
+					
+					move(amount = 1) // skip paren r
+					break
+				}
 			}
 			
-			throw IllegalStateException("token out of place: $token")
+			
+			return Tuple(types)
 		}
 		
-		return Tuple(types)
+		
+		return when (peek?.type)
+		{
+			TYPE    -> parseBasicType()
+			PAREN_L -> parseTupleType()
+			else ->
+			{
+				throw IllegalStateException("token out of place: $peek")
+			}
+		}
 	}
 	
 	private fun PeekIterator<TokenData>.parseTypeQuery(cmds: MutableList<Command>)

@@ -54,12 +54,6 @@ object Tests
 	}
 	
 	@Test
-	internal fun `test interleaved push`()
-	{
-		odinEvalFromFile("test16.o")
-	}
-	
-	@Test
 	internal fun `test tuple types`()
 	{
 		odinEvalFromFile("test13.o")

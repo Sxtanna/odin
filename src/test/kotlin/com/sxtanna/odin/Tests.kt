@@ -54,8 +54,21 @@ object Tests
 	}
 	
 	@Test
-	internal fun `test create person`()
+	internal fun `test interleaved push`()
 	{
-		odinEvalFromFile("test5.o")
+		odinEvalFromFile("test16.o")
 	}
+	
+	@Test
+	internal fun `test tuple types`()
+	{
+		odinEvalFromFile("test13.o")
+	}
+	
+	@Test
+	internal fun `test brainfuck`()
+	{
+		odinEvalFromFile("brainfuck.o")
+	}
+	
 }

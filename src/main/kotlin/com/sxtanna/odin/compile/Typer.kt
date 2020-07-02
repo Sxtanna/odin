@@ -1039,7 +1039,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += shuntingYard(expr)
 	}
 	
-	private fun PeekIterator<TokenData>.parseExpr(breakOnComma: Boolean = false): List<Command>
+	private fun PeekIterator<TokenData>.parseExpr(breakOnComma: Boolean = false, breakOnBraceL: Boolean = false): List<Command>
 	{
 		val expr = mutableListOf<Command>()
 		
@@ -1057,6 +1057,11 @@ object Typer : (List<TokenData>) -> List<Command>
 				break
 			}
 			if (token.type == COMMA && breakOnComma)
+			{
+				move(amount = -1)
+				break
+			}
+			if (token.type == BRACE_L && breakOnBraceL)
 			{
 				move(amount = -1)
 				break

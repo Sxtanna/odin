@@ -33,7 +33,7 @@ object Odin
 	{
 		val cont = cont ?: Context()
 		
-		when (val read = read(code, printTime = true, printInfo = true))
+		when (val read = read(code, printTime = true, printInfo = false))
 		{
 			is None ->
 			{

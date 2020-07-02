@@ -678,6 +678,9 @@ data class CommandInstanceDefine(val name: String)
 data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 	: Command()
 {
+	
+	private var method: Method? = null
+	
 	override fun eval(stack: Stack, context: Context)
 	{
 		var receiver = stack.pull()
@@ -698,14 +701,40 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			args += data
 		}
 		
-		val (method, params) = requireNotNull(resolveMethodCallJ(receiver.javaClass, name, args))
+		
+		val target: Method
+		val params: Array<Any>
+		
+		val cached = this.method
+		
+		if (cached != null)
 		{
-			"could not resolve method $name"
+			target = cached
+			params = requireNotNull(resolveMatching(cached, args)?.second) {
+				"could not resolve params"
+			}
+		}
+		else
+		{
+			val (found, match) = requireNotNull(resolve(receiver.javaClass.declaredMethods.filter { it.name == name }, args))
+			{
+				"could not resolve method $name"
+			}
+			
+			require(found is Method)
+			{
+				"resolved method was not an actual method"
+			}
+			
+			target = found
+			params = match
+			
+			target.isAccessible = true
+			
+			this.method = target
 		}
 		
-		method.isAccessible = true
-		
-		var result = method.invoke(receiver, *params)
+		var result = target.invoke(receiver, *params)
 		
 		when (result)
 		{
@@ -731,87 +760,145 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		
 		stack.push(Value(type, result ?: Unit))
 	}
+}
+
+data class CommandJavaTypeDefine(val clazz: Class<*>, val size: Int)
+	: Command()
+{
 	
-	private fun resolveMethodCallJ(type: Class<*>, name: String, args: List<Any>): Pair<Method, Array<Any>>?
+	private var constructor: Constructor<*>? = null
+	
+	override fun eval(stack: Stack, context: Context)
 	{
-		var funcs = type.declaredMethods.filter { it.name == name }
-		if (funcs.isEmpty())
+		var type = context.findType(clazz.name)
+		if (type == null)
 		{
-			return null
-		}
-		
-		funcs = funcs.filter { it.parameterCount == args.size }
-		if (funcs.isEmpty())
-		{
-			return null
-		}
-		
-		if (funcs.size == 1)
-		{
-			val func = funcs.single()
+			type = Type(clazz.name, Basic(clazz.name))
 			
-			if (func.parameterCount == 0 && args.isEmpty())
+			context.defineType(type)
+		}
+		
+		
+		val args = mutableListOf<Any>()
+		repeat(size)
+		{
+			var data = stack.pull()
+			if (data is Value)
 			{
-				return func to args.toTypedArray()
+				data = data.data
 			}
 			
-			return resolveMatching(func, args)
+			args += data
 		}
 		
-		for (func in funcs)
+		
+		val target: Constructor<*>
+		val params: Array<Any>
+		
+		val cached = this.constructor
+		
+		if (cached != null)
 		{
-			return resolveMatching(func, args) ?: continue
+			target = cached
+			params = requireNotNull(resolveMatching(cached, args)?.second) {
+				"could not resolve params"
+			}
+		}
+		else
+		{
+			val (found, match) = requireNotNull(resolve(clazz.declaredConstructors.toList(), args))
+			{
+				"could not resolve constructor of ${clazz.name}"
+			}
+			
+			
+			require(found is Constructor<*>)
+			{
+				"resolved constructor was not an actual constructor"
+			}
+			
+			target = found
+			params = match
+			
+			target.isAccessible = true
+			
+			this.constructor = target
 		}
 		
+		stack.push(Value(type, target.newInstance(*params)))
+	}
+}
+
+
+private fun resolve(candidates: List<Executable>, args: List<Any>): Pair<Executable, Array<Any>>?
+{
+	var funcs = candidates
+	if (funcs.isEmpty())
+	{
 		return null
 	}
 	
-	private fun resolveMatching(func: Method, args: List<Any>): Pair<Method, Array<Any>>?
+	funcs = funcs.filter { it.parameterCount == args.size }
+	if (funcs.isEmpty())
 	{
-		val meth = func.parameterTypes
-		val pass = args.toTypedArray()
+		return null
+	}
+	
+	if (funcs.size == 1)
+	{
+		val func = funcs.single()
 		
-		for (index in meth.indices)
+		if (func.parameterCount == 0 && args.isEmpty())
 		{
-			val methType = meth[index]
-			
-			val passData = pass[index]
-			val passType = passData.javaClass
-			
-			if (methType != passType)
+			return func to args.toTypedArray()
+		}
+		
+		return resolveMatching(func, args)
+	}
+	
+	for (func in funcs)
+	{
+		return resolveMatching(func, args) ?: continue
+	}
+	
+	return null
+}
+
+private fun resolveMatching(func: Executable, args: List<Any>): Pair<Executable, Array<Any>>?
+{
+	val meth = func.parameterTypes
+	val pass = args.toTypedArray()
+	
+	for (index in meth.indices)
+	{
+		val methType = meth[index]
+		
+		val passData = pass[index]
+		val passType = passData.javaClass
+		
+		if (methType != passType)
+		{
+			if (passData !is Number)
 			{
-				if (passData !is Number)
+				return null
+			}
+			
+			pass[index] = when (methType)
+			{
+				Any::class.java    -> passData
+				Byte::class.java   -> passData.toByte()
+				Short::class.java  -> passData.toShort()
+				Int::class.java    -> passData.toInt()
+				Long::class.java   -> passData.toLong()
+				Float::class.java  -> passData.toFloat()
+				Double::class.java -> passData.toDouble()
+				else               ->
 				{
 					return null
 				}
-				
-				pass[index] = when (methType)
-				{
-					Any::class.java    -> passData
-					Byte::class.java   -> passData.toByte()
-					Short::class.java  -> passData.toShort()
-					Int::class.java    -> passData.toInt()
-					Long::class.java   -> passData.toLong()
-					Float::class.java  -> passData.toFloat()
-					Double::class.java -> passData.toDouble()
-					else               ->
-					{
-						return null
-					}
-				}
 			}
 		}
-		
-		return func to pass
 	}
+	
+	return func to pass
 }
-
-data class CommandJavaTypeDefine(val clazz: Class<*>)
-	: Command()
-{
-	override fun eval(stack: Stack, context: Context)
-	{
-		stack.push(Value(Type(clazz.name, Basic(clazz.name)), clazz.getDeclaredConstructor().newInstance()))
-	}
-}
-

@@ -940,7 +940,21 @@ object Typer : (List<TokenData>) -> List<Command>
 			"java bounds must be a txt in bracks"
 		}
 		
-		cmds += CommandJavaTypeDefine(Class.forName(name))
+		var constructorParams = 0
+		
+		if (peek?.type == PAREN_L)
+		{
+			val params = parseTup(funcParams = true)
+			
+			params.forEach()
+			{ expr ->
+				cmds += CommandRoute(Route.of(expr))
+			}
+			
+			constructorParams = params.size
+		}
+		
+		cmds += CommandJavaTypeDefine(Class.forName(name), constructorParams)
 	}
 	
 	private fun PeekIterator<TokenData>.parseBound(): List<Types>

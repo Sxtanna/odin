@@ -608,10 +608,10 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandFunctionDefine(func)
 	}
 	
-	private fun PeekIterator<TokenData>.parsePush(cmds: MutableList<Command>)
+	private fun PeekIterator<TokenData>.parsePush(cmds: MutableList<Command>, returnToStack: Boolean = false)
 	{
 		parseShuntedExpression(cmds)
-		cmds += CommandConsolePush(true)
+		cmds += CommandConsolePush(true, returnToStack)
 	}
 	
 	private fun PeekIterator<TokenData>.parsePull(cmds: MutableList<Command>)
@@ -1178,7 +1178,7 @@ object Typer : (List<TokenData>) -> List<Command>
 						Word.PULL ->
 							parsePull(expr)
 						Word.PUSH ->
-							parsePush(expr)
+							parsePush(expr, returnToStack = true)
 						Word.TYPE ->
 							parseTypeQuery(expr)
 						Word.WHEN ->

@@ -277,25 +277,31 @@ data class CommandStackPull(val pull: Boolean)
 	}
 }
 
-data class CommandConsolePush(val newline: Boolean)
+data class CommandConsolePush(val newline: Boolean, val returnToStack: Boolean = false)
 	: Command()
 {
-	
 	override fun eval(stack: Stack, context: Context)
 	{
-		var value = stack.pull()
-		if (value is Value)
+		val value = stack.pull()
+		
+		var output = value
+		if (output is Value)
 		{
-			value = value.toPushString()
+			output = output.toPushString()
 		}
 		
 		if (!newline)
 		{
-			print(value)
+			print(output)
 		}
 		else
 		{
-			println(value)
+			println(output)
+		}
+		
+		if (returnToStack)
+		{
+			stack.push(value)
 		}
 	}
 }

@@ -560,19 +560,18 @@ data class CommandLoop(val expr: Route, var body: Route)
 			context.joinScope(Scope("loop"))
 			
 			val result = Odin.eval(context, body, stack)
+			
+			context.quitScope()
+			
 			if (result is None)
 			{
 				if (result.info is CommandStop.StopException)
 				{
-					context.quitScope()
 					break
 				}
 				
-				context.quitScope()
 				throw result.info
 			}
-			
-			context.quitScope()
 		}
 	}
 }

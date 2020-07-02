@@ -3,6 +3,7 @@ package com.sxtanna.odin.compile.data
 enum class Word
 {
 	WHEN,
+	CASE,
 	ELSE,
 	
 	VAL,

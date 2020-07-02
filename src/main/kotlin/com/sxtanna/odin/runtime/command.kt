@@ -395,6 +395,47 @@ data class CommandWhen(val expr: Route, val conditionPass: Route, val conditionF
 	}
 }
 
+data class CommandCase(val expr: Route, val conditions: Map<Route, Route>)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		// evaluate expression
+		val evalExpr = Odin.eval(context, expr, stack)
+		if (evalExpr is None)
+		{
+			throw evalExpr.info
+		}
+		
+		// resolve result of expression
+		val target = stack.pull()
+		
+		for ((cond, case) in conditions)
+		{
+			val evalCond = Odin.eval(context, cond, stack)
+			if (evalCond is None)
+			{
+				throw evalCond.info
+			}
+			
+			val value = stack.pull()
+			
+			if (target != value)
+			{
+				continue
+			}
+			
+			val evalCase = Odin.eval(context, case, stack)
+			if (evalCase is None)
+			{
+				throw evalCase.info
+			}
+			
+			break
+		}
+	}
+}
+
 data class CommandTuple(val size: Int)
 	: Command()
 {

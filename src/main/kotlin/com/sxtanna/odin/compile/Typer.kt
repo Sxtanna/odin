@@ -27,6 +27,7 @@ import com.sxtanna.odin.results.Result
 import com.sxtanna.odin.results.Some
 import com.sxtanna.odin.results.map
 import com.sxtanna.odin.runtime.Command
+import com.sxtanna.odin.runtime.CommandCase
 import com.sxtanna.odin.runtime.CommandClazzDefine
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
@@ -377,6 +378,8 @@ object Typer : (List<TokenData>) -> List<Command>
 				parsePull(cmds)
 			Word.WHEN  ->
 				parseWhen(cmds)
+			Word.CASE ->
+				parseCase(cmds)
 			Word.TYPE  ->
 				parseTypeQuery(cmds)
 			Word.LOOP  ->
@@ -763,6 +766,90 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 		
 		cmds += CommandWhen(Route.of(expr), Route.of(pass), Route.of(fail))
+	}
+	
+	private fun PeekIterator<TokenData>.parseCase(cmds: MutableList<Command>)
+	{
+		var token: TokenData
+		
+		token = next
+		require(token.type == PAREN_L)
+		{
+			"when condition must be in parentheses"
+		}
+		
+		val expr = mutableListOf<Command>()
+		parseShuntedExpression(expr)
+		
+		token = next
+		require(token.type == PAREN_R)
+		{
+			"when condition must be in parentheses"
+		}
+		
+		ignoreNewLines()
+		
+		token = next
+		require(token.type == BRACE_L)
+		{
+			"when condition pass must be in braces"
+		}
+		
+		ignoreNewLines()
+		
+		val cases = mutableMapOf<Route, Route>()
+		
+		while (!empty)
+		{
+			token = peek ?: break
+			
+			if (token.type == BRACE_R)
+			{
+				move(amount = 1)
+				break
+			}
+			if (token.type == NEWLINE)
+			{
+				move(amount = 1)
+				continue
+			}
+			
+			val caseExpr = parseExpr(breakOnBraceL = true)
+			
+			token = next
+			require(token.type == BRACE_L)
+			{
+				"case condition must be followed by a code block : $token"
+			}
+			
+			val caseFunc = mutableListOf<Command>()
+			while (!empty)
+			{
+				token = peek ?: break
+				
+				if (token.type == BRACE_R)
+				{
+					break
+				}
+				if (token.type == NEWLINE)
+				{
+					move(amount = 1)
+					continue
+				}
+				
+				parseMain(caseFunc)
+			}
+			
+			token = next
+			require(token.type == BRACE_R)
+			{
+				"case condition must be followed by a code block : $token"
+			}
+			
+			cases[Route.of(caseExpr)] = Route.of(caseFunc)
+		}
+		
+		cmds += CommandCase(Route.of(expr), cases)
 	}
 	
 	private fun PeekIterator<TokenData>.parseLoop(cmds: MutableList<Command>)

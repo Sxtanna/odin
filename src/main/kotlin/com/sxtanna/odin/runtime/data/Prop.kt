@@ -13,7 +13,7 @@ data class Prop(val name: String, val mutable: Boolean)
 		{
 			check(mutable || field == null || value == null)
 			{
-				"property reassignment: ${toString()}"
+				"property reassignment: ${toString()} to `$value`"
 			}
 			
 			field = value

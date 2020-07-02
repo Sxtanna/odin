@@ -1,8 +1,6 @@
 package com.sxtanna.odin.runtime.base
 
 import com.sxtanna.odin.runtime.Command
-import com.sxtanna.odin.runtime.CommandDone
-import com.sxtanna.odin.runtime.CommandMain
 import com.sxtanna.odin.runtime.Context
 
 data class Route(val command: Command)
@@ -31,9 +29,6 @@ data class Route(val command: Command)
 			
 			here = here.next
 		}
-		
-		cmds.removeFirst()
-		cmds.removeLast()
 		
 		return cmds
 	}
@@ -85,7 +80,7 @@ data class Route(val command: Command)
 	{
 		fun of(commands: Collection<Command>): Route
 		{
-			val routes = listOf(CommandMain, *commands.toTypedArray(), CommandDone).map(::Route)
+			val routes = listOf(*commands.toTypedArray()).map(::Route)
 			
 			routes.forEachIndexed()
 			{ index, route ->

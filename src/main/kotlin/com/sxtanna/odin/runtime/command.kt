@@ -16,6 +16,8 @@ import com.sxtanna.odin.runtime.base.Value
 import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
+import java.lang.reflect.Constructor
+import java.lang.reflect.Executable
 import java.lang.reflect.Method
 import java.util.Scanner
 
@@ -28,16 +30,6 @@ sealed class Command
 	{
 		return this::class.simpleName ?: "Unknown"
 	}
-}
-
-object CommandMain : Command()
-{
-	override fun eval(stack: Stack, context: Context) = Unit
-}
-
-object CommandDone : Command()
-{
-	override fun eval(stack: Stack, context: Context) = Unit
 }
 
 object CommandStop : Command()

@@ -18,6 +18,20 @@ sealed class Types
 	}
 	
 	
+	final override fun equals(other: Any?): Boolean
+	{
+		if (this === other) return true
+		if (other !is Types) return false
+		
+		return matches(other)
+	}
+	
+	final override fun hashCode(): Int
+	{
+		return name.hashCode()
+	}
+	
+	
 	companion object
 	{
 		val NONE = Basic("Nil")
@@ -33,9 +47,8 @@ data class Basic(override val name: String)
 {
 	override fun matches(type: Types): Boolean
 	{
-		return name == "All" || this == type
+		return name == "All" || name == type.name
 	}
-	
 	
 	override fun toString(): String
 	{

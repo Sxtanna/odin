@@ -26,4 +26,24 @@ data class Type(val name: String, val back: Types)
 		                       TXT,
 		                       ARR)
 	}
+	
+	override fun equals(other: Any?): Boolean
+	{
+		if (this === other) return true
+		if (other !is Type) return false
+		
+		if (back != other.back)
+		{
+			return false
+		}
+		
+		return true
+	}
+	
+	override fun hashCode(): Int
+	{
+		return back.hashCode()
+	}
+	
+	
 }

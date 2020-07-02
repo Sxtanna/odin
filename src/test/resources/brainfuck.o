@@ -1,0 +1,66 @@
+var index = 0
+var limit = 0
+val array = java::["com.sxtanna.odin.Brain"]
+
+
+var commandIndex = -1
+val commandQueue = "+[-[<<[+[--->]-[<<<]]]>>>-]>-.---.>..>.<<<<-.<+.>>>>>.>.<<.<-."
+
+
+loop (commandIndex++ < commandQueue.length()) {
+    case (commandQueue[commandIndex]) {
+        '+' { array.set(index, array.get(index) + 1) }
+        '-' { array.set(index, array.get(index) - 1) }
+        '<' {
+            when (index == 0) {
+                index = array.getSize() - 1
+            }
+            else {
+                index--
+            }
+        }
+        '>' {
+            when (index == (array.getSize() - 1)) {
+                index = 0
+            }
+            else {
+                index++
+            }
+        }
+        '.' {
+            push array.getChar(index)
+        }
+        '[' {
+            when (array.get(index) == 0) {
+                commandIndex++
+
+                loop (limit > 0 || commandQueue[commandIndex] != ']') {
+
+                    case (commandQueue[commandIndex]) {
+                        '[' { limit++ }
+                        ']' { limit-- }
+                    }
+
+                    commandIndex++
+                }
+            }
+        }
+        ']' {
+            when (array.get(index) != 0) {
+                commandIndex--
+
+                loop (limit > 0 || commandQueue[commandIndex] != '[') {
+
+                    case (commandQueue[commandIndex]) {
+                        ']' { limit++ }
+                        '[' { limit-- }
+                    }
+
+                    commandIndex--
+                }
+
+                commandIndex--
+            }
+        }
+    }
+}

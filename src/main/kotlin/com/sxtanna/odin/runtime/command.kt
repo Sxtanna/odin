@@ -21,8 +21,6 @@ import java.util.Scanner
 
 sealed class Command
 {
-	val uuid = this::class.java.simpleName
-	
 	abstract fun eval(stack: Stack, context: Context)
 	
 	

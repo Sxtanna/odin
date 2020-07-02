@@ -105,7 +105,7 @@ object Lexer : (String) -> List<TokenData>
 	private fun pass0(text: String): List<TokenData>
 	{
 		var char = 0
-		var line = 0
+		var line = 1
 		
 		val toks = mutableListOf<TokenData>()
 		val iter = PeekIterator(text.toList())

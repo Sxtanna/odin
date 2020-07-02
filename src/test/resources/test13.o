@@ -1,6 +1,6 @@
 
 
-fun add(nums: (Int, Int)): (Int, Int, Int)
+fun add(nums: (Int::2)): (Int::3)
 {
     => (nums[0], nums[1], nums[0] + nums[1])
 }

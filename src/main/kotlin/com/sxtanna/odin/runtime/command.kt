@@ -726,15 +726,11 @@ data class CommandRoute(var route: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		// println("route0: $stack")
-		
 		val result = Odin.eval(context, route, stack)
 		if (result is None)
 		{
 			throw result.info
 		}
-		
-		// println("route1: $stack")
 	}
 }
 

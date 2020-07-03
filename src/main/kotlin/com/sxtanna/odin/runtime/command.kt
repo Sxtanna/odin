@@ -792,6 +792,21 @@ data class CommandJavaTypeDefine(val clazz: Class<*>, val size: Int)
 		}
 		
 		
+		if (clazz.isArray)
+		{
+			require(args.size <= 1)
+			{
+				"array creation params must be a single value"
+			}
+			
+			val length = requireNotNull((args.single() as? Number)?.toInt())
+			{
+				"array creation param must be a single int: `${args.single()}`"
+			}
+			
+			return stack.push(Value(type, java.lang.reflect.Array.newInstance(clazz.componentType, length)))
+		}
+		
 		val target: Constructor<*>
 		val params: Array<Any>
 		

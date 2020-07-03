@@ -3,7 +3,6 @@ package com.sxtanna.odin.compile.data
 import com.sxtanna.odin.runtime.base.Stack
 import com.sxtanna.odin.runtime.base.Value
 import com.sxtanna.odin.runtime.data.Type
-import kotlin.math.roundToLong
 
 sealed class Oper
 {
@@ -324,12 +323,15 @@ private fun Any.asObject(concat: Boolean = false): Any
 	}
 }
 
+@Suppress("UNCHECKED_CAST")
 private fun compare(bitL: Any, bitR: Any): Int
 {
-	check(bitL is Comparable<*> && bitL::class.java.superclass.isAssignableFrom(bitR::class.java)) {
+	check(bitL is Comparable<*> && bitL::class.java.isAssignableFrom(bitR::class.java)) {
 		"values [$bitL|${bitL::class.simpleName}] and [$bitR|${bitR::class.simpleName}] aren't comparable"
 	}
 	
-	@Suppress("UNCHECKED_CAST")
-	return (bitL as? Comparable<Any>)?.compareTo(bitR) ?: 0
+	val comL = (bitL as? Comparable<Any>) ?: return 0
+	val comR = (bitR as? Comparable<Any>) ?: return 0
+	
+	return comL.compareTo(comR)
 }

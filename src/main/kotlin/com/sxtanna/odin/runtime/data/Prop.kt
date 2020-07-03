@@ -19,6 +19,13 @@ data class Prop(val name: String, val mutable: Boolean)
 			field = value
 		}
 	
+	fun copyProp(): Prop
+	{
+		val prop = copy()
+		prop.type = type
+		
+		return prop
+	}
 	
 	override fun toString(): String
 	{

@@ -69,7 +69,7 @@ class Context
 	
 	fun defineProp(prop: Prop)
 	{
-		scope[0].props[prop.name] = prop.copy()
+		scope[0].props[prop.name] = prop.copyProp()
 	}
 	
 	fun defineFunc(func: Func)

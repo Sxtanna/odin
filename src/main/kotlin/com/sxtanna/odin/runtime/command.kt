@@ -18,6 +18,7 @@ import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 import java.lang.reflect.Constructor
 import java.lang.reflect.Executable
+import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Scanner
 
@@ -735,6 +736,78 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		}
 		
 		var result = target.invoke(receiver, *params)
+		
+		when (result)
+		{
+			is Int   ->
+			{
+				result = result.toLong()
+			}
+			is Float ->
+			{
+				result = result.toDouble()
+			}
+		}
+		
+		val type = when (result)
+		{
+			is Long    -> Type.INT
+			is Double  -> Type.DEC
+			is String  -> Type.TXT
+			is Char    -> Type.LET
+			is Boolean -> Type.BIT
+			else       -> Type.ALL
+		}
+		
+		stack.push(Value(type, result ?: Unit))
+	}
+}
+
+
+data class CommandInstancePropertyAccess(val name: String)
+	: Command()
+{
+	
+	private var field: Field? = null
+	
+	override fun eval(stack: Stack, context: Context)
+	{
+		var receiver = stack.pull()
+		if (receiver is Value)
+		{
+			receiver = receiver.data
+		}
+		
+		
+		if (receiver.javaClass.isArray)
+		{
+			require(name == "length")
+			{
+				"array classes only define a length property"
+			}
+			
+			return stack.push(Value(Type.INT, java.lang.reflect.Array.getLength(receiver).toLong()))
+		}
+		
+		val target: Field
+		
+		val cached = this.field
+		
+		if (cached != null)
+		{
+			target = cached
+		}
+		else
+		{
+			val found = receiver.javaClass.getDeclaredField(name)
+			found.isAccessible = true
+			
+			this.field = found
+			
+			target = found
+		}
+		
+		var result = target.get(receiver)
 		
 		when (result)
 		{

@@ -36,6 +36,7 @@ import com.sxtanna.odin.runtime.CommandFunctionDefine
 import com.sxtanna.odin.runtime.CommandGet
 import com.sxtanna.odin.runtime.CommandHead
 import com.sxtanna.odin.runtime.CommandInstanceFunctionAccess
+import com.sxtanna.odin.runtime.CommandInstancePropertyAccess
 import com.sxtanna.odin.runtime.CommandJavaTypeDefine
 import com.sxtanna.odin.runtime.CommandLiteral
 import com.sxtanna.odin.runtime.CommandLoop
@@ -1472,21 +1473,29 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandLiteral(value.first, value.second)
 	}
 	
-	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData, assigned: Boolean = false)
+	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData)
 	{
 		when (peek?.type)
 		{
 			PAREN_L -> // function call
 			{
-				parseFuncCall(cmds, token)
+				parseFuncCall(cmds, token, instance = false)
 			}
-			POINT   -> // instance function call
+			POINT   -> // instance call
 			{
-				parseFuncCall(cmds, token, instance = true)
+				if (peek(amount = 2)?.type == PAREN_L)
+				{
+					parseFuncCall(cmds, token, instance = true)
+				}
+				else
+				{
+					parsePropCall(cmds, token, instance = true)
+				}
 			}
 			else    ->
 			{
-				cmds += CommandPropertyAccess(token.data)
+				parsePropCall(cmds, token, instance = false)
+				
 			}
 		}
 	}
@@ -1646,6 +1655,34 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		cmds += CommandPropertyAccess(data.data)
 		cmds += CommandInstanceFunctionAccess(funcName, params.size)
+	}
+	
+	private fun PeekIterator<TokenData>.parsePropCall(cmds: MutableList<Command>, data: TokenData, instance: Boolean = false)
+	{
+		if (!instance)
+		{
+			cmds += CommandPropertyAccess(data.data)
+			return
+		}
+		
+		var token: TokenData
+		
+		token = next
+		require(token.type == POINT)
+		{
+			"instance property call must be with a point"
+		}
+		
+		token = next
+		require(token.type == WORD || token.type == NAME || token.type == TYPE)
+		{
+			"instance property call must be one of [WORD, NAME, TYPE]"
+		}
+		
+		val propName = token.data
+		
+		cmds += CommandPropertyAccess(data.data)
+		cmds += CommandInstancePropertyAccess(propName)
 	}
 	
 	private fun resolveValue(token: TokenData): Pair<String, Any>

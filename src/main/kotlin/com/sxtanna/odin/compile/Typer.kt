@@ -1381,7 +1381,7 @@ object Typer : (List<TokenData>) -> List<Command>
 					"shorthand tuple syntax must have a whole number"
 				}
 				
-				repeat((value.second as Long).toInt())
+				repeat((value.second as Int))
 				{
 					types += basic
 				}
@@ -1743,7 +1743,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			NUM  ->
 			{
 				if ('.' !in token.data)
-					token.data.toLong()
+					token.data.toInt()
 				else
 					token.data.toDouble()
 			}

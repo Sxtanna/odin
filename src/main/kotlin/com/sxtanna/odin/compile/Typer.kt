@@ -349,6 +349,13 @@ object Typer : (List<TokenData>) -> List<Command>
 				
 				parseRef(cmds, data)
 			}
+			BRACK_L ->
+			{
+				move(amount = -1)
+				
+				cmds += CommandPropertyAccess(data.data)
+				parseInd(cmds)
+			}
 			else    ->
 			{
 				throw UnsupportedOperationException("token out of place: $token")

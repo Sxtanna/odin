@@ -1,26 +1,27 @@
 var index = 0
 var limit = 0
-val array = java::["com.sxtanna.odin.Brain"]
-
+val array = java::["[B"](100)
 
 var commandIndex = -1
-val commandQueue = "+[-[<<[+[--->]-[<<<]]]>>>-]>-.---.>..>.<<<<-.<+.>>>>>.>.<<.<-."
+val commandQueue = "-[------->+<]>-.-[->+++++<]>++.+++++++..+++.[--->+<]>-----.---[->+++<]>.-[--->+<]>---.+++.------.--------."
 
+
+var output = ""
 
 loop (commandIndex++ < commandQueue.length()) {
     case (commandQueue[commandIndex]) {
-        '+' { array.set(index, array.get(index) + 1) }
-        '-' { array.set(index, array.get(index) - 1) }
+        '+' { array[index] = array[index] + 1 }
+        '-' { array[index] = array[index] - 1 }
         '<' {
             when (index == 0) {
-                index = array.getSize() - 1
+                index = array.length - 1
             }
             else {
                 index--
             }
         }
         '>' {
-            when (index == (array.getSize() - 1)) {
+            when (index == (array.length - 1)) {
                 index = 0
             }
             else {
@@ -28,10 +29,10 @@ loop (commandIndex++ < commandQueue.length()) {
             }
         }
         '.' {
-            push array.getChar(index)
+            output += cast::[Let](array[index])
         }
         '[' {
-            when (array.get(index) == 0) {
+            when (cast::[Int](array[index]) == 0) {
                 commandIndex++
 
                 loop (limit > 0 || commandQueue[commandIndex] != ']') {
@@ -46,7 +47,7 @@ loop (commandIndex++ < commandQueue.length()) {
             }
         }
         ']' {
-            when (array.get(index) != 0) {
+            when (cast::[Int](array[index]) != 0) {
                 commandIndex--
 
                 loop (limit > 0 || commandQueue[commandIndex] != '[') {
@@ -63,4 +64,8 @@ loop (commandIndex++ < commandQueue.length()) {
             }
         }
     }
+}
+
+when (output != "") {
+    push "\n\n$output\n\n"
 }

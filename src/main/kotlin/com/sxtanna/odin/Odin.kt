@@ -120,12 +120,20 @@ object Odin
 				
 				while (route != null)
 				{
-					route.eval(stack ?: cont.stack, cont)
+					try
+					{
+						route.eval(stack ?: cont.stack, cont)
+					}
+					catch (ex: Throwable)
+					{
+						ex.printStackTrace(System.out)
+						println("failed to evaluate command\n${route.command}")
+						break
+					}
 					
 					route = route.next
 				}
 			}
-			
 			
 			if (printTime)
 			{

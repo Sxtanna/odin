@@ -47,6 +47,7 @@ import com.sxtanna.odin.runtime.CommandPropertyDefine
 import com.sxtanna.odin.runtime.CommandPropertyResets
 import com.sxtanna.odin.runtime.CommandRedo
 import com.sxtanna.odin.runtime.CommandRoute
+import com.sxtanna.odin.runtime.CommandSet
 import com.sxtanna.odin.runtime.CommandStackPull
 import com.sxtanna.odin.runtime.CommandStackPush
 import com.sxtanna.odin.runtime.CommandStop
@@ -1602,8 +1603,8 @@ object Typer : (List<TokenData>) -> List<Command>
 			"index access requires brack l"
 		}
 		
-		val expr = mutableListOf<Command>()
-		parseShuntedExpression(expr)
+		val index = mutableListOf<Command>()
+		parseShuntedExpression(index)
 		
 		token = next
 		require(token.type == BRACK_R)
@@ -1611,7 +1612,19 @@ object Typer : (List<TokenData>) -> List<Command>
 			"index access requires brack r"
 		}
 		
-		cmds += CommandGet(Route.of(expr))
+		if (peek?.type != ASSIGN)
+		{
+			cmds += CommandGet(Route.of(index))
+			return
+		}
+		
+		move(amount = 1)
+		
+		
+		val value = mutableListOf<Command>()
+		parseShuntedExpression(value)
+		
+		cmds += CommandSet(Route.of(index), Route.of(value))
 	}
 	
 	

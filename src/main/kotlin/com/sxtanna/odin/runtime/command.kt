@@ -512,10 +512,10 @@ data class CommandGet(val indexExpr: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val indexExpr = Odin.eval(context, indexExpr, stack)
-		if (indexExpr is None)
+		val result = Odin.eval(context, indexExpr, stack)
+		if (result is None)
 		{
-			throw indexExpr.info
+			throw result.info
 		}
 		
 		var index = stack.pull()
@@ -530,23 +530,35 @@ data class CommandGet(val indexExpr: Route)
 			access = access.data
 		}
 		
-		val data = when (access)
+		val data = if (access.javaClass.isArray)
 		{
-			is Map<*, *>    ->
+			val index = requireNotNull((index as? Number)?.toInt())
 			{
-				access[index]
+				"array index must be an int"
 			}
-			is List<*>      ->
+			
+			java.lang.reflect.Array.get(access, index)
+		}
+		else
+		{
+			when (access)
 			{
-				access[index.toString().toInt()]
-			}
-			is CharSequence ->
-			{
-				access[index.toString().toInt()]
-			}
-			else            ->
-			{
-				throw UnsupportedOperationException("invalid accessor")
+				is Map<*, *>    ->
+				{
+					access[index]
+				}
+				is List<*>      ->
+				{
+					access[(index as Number).toInt()]
+				}
+				is CharSequence ->
+				{
+					access[(index as Number).toInt()]
+				}
+				else            ->
+				{
+					throw UnsupportedOperationException("invalid accessor")
+				}
 			}
 		}
 		
@@ -568,12 +580,83 @@ data class CommandGet(val indexExpr: Route)
 	}
 }
 
-data class CommandSet(val index: Route)
+data class CommandSet(val indexExpr: Route, val valueExpr: Route)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-	
+		val indexResult = Odin.eval(context, indexExpr, stack)
+		if (indexResult is None)
+		{
+			throw indexResult.info
+		}
+		
+		var index = stack.pull()
+		if (index is Value)
+		{
+			index = index.data
+		}
+		
+		val valueResult = Odin.eval(context, valueExpr, stack)
+		if (valueResult is None)
+		{
+			throw valueResult.info
+		}
+		
+		var value = stack.pull()
+		if (value is Value)
+		{
+			value = value.data
+		}
+		
+		var access = stack.pull()
+		if (access is Value)
+		{
+			access = access.data
+		}
+		
+		if (access.javaClass.isArray)
+		{
+			val index = requireNotNull((index as? Number)?.toInt())
+			{
+				"array index must be an int"
+			}
+			
+			val value = when (access.javaClass.componentType)
+			{
+				Byte::class.java   -> (value as Number).toByte()
+				Short::class.java  -> (value as Number).toShort()
+				Int::class.java    -> (value as Number).toInt()
+				Long::class.java   -> (value as Number).toLong()
+				Float::class.java  -> (value as Number).toFloat()
+				Double::class.java -> (value as Number).toDouble()
+				else               -> value
+			}
+			
+			java.lang.reflect.Array.set(access, index, value)
+			return
+		}
+		
+		when (access)
+		{
+			is MutableMap<*, *> ->
+			{
+				(access as MutableMap<Any, Any>)[index] = value
+			}
+			is MutableList<*>   ->
+			{
+				val index = requireNotNull((index as? Number)?.toInt())
+				{
+					"list index must be an int"
+				}
+				
+				(access as MutableList<Any>)[index] = value
+			}
+			else                ->
+			{
+				throw UnsupportedOperationException("invalid accessor")
+			}
+		}
 	}
 }
 

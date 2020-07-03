@@ -118,15 +118,49 @@ data class CommandPropertyAssign(val name: String)
 				{
 					property.type = value.type.back
 				}
-				else
+				
+				if (property.type.matches(value.type))
 				{
-					require(property.type.matches(value.type))
+					property.data = value
+					return
+				}
+				
+				var data = value.data
+				var type = value.type
+				
+				if (data is Number)
+				{
+					when (property.type)
 					{
-						"property ${property.name} expected type ${property.type}, got type ${value.type.back}"
+						Type.BYT.back -> {
+							data = data.toByte()
+							type = Type.BYT
+						}
+						Type.INT.back -> {
+							data = data.toInt()
+							type = Type.INT
+						}
+						Type.LNG.back -> {
+							data = data.toLong()
+							type = Type.LNG
+						}
+						Type.FLT.back -> {
+							data = data.toFloat()
+							type = Type.FLT
+						}
+						Type.DEC.back -> {
+							data = data.toDouble()
+							type = Type.DEC
+						}
 					}
 				}
 				
-				property.data = value
+				require(property.type.matches(type))
+				{
+					"property ${property.name} expected type ${property.type}, got type ${value.type.back}"
+				}
+				
+				property.data = Value(type, data)
 			}
 			else     ->
 			{
@@ -318,7 +352,10 @@ data class CommandConsolePull(val type: Types, val prompt: String?)
 				when (type)
 				{
 					Type.TXT.back -> scan.nextLine()
-					Type.INT.back -> scan.nextLong()
+					Type.BYT.back -> scan.nextByte()
+					Type.INT.back -> scan.nextInt()
+					Type.LNG.back -> scan.nextLong()
+					Type.FLT.back -> scan.nextFloat()
 					Type.DEC.back -> scan.nextDouble()
 					Type.BIT.back -> scan.nextBoolean()
 					Type.NIL.back -> scan.nextLine()
@@ -516,7 +553,10 @@ data class CommandGet(val indexExpr: Route)
 		val type = when (data)
 		{
 			is Value   -> data.type
-			is Long    -> Type.INT
+			is Byte    -> Type.BYT
+			is Int     -> Type.INT
+			is Long    -> Type.LNG
+			is Float   -> Type.FLT
 			is Double  -> Type.DEC
 			is String  -> Type.TXT
 			is Char    -> Type.LET
@@ -735,23 +775,15 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			this.method = target
 		}
 		
-		var result = target.invoke(receiver, *params)
-		
-		when (result)
-		{
-			is Int   ->
-			{
-				result = result.toLong()
-			}
-			is Float ->
-			{
-				result = result.toDouble()
-			}
-		}
+		val result = target.invoke(receiver, *params)
 		
 		val type = when (result)
 		{
-			is Long    -> Type.INT
+			is Value   -> result.type
+			is Byte    -> Type.BYT
+			is Int     -> Type.INT
+			is Long    -> Type.LNG
+			is Float   -> Type.FLT
 			is Double  -> Type.DEC
 			is String  -> Type.TXT
 			is Char    -> Type.LET
@@ -807,23 +839,15 @@ data class CommandInstancePropertyAccess(val name: String)
 			target = found
 		}
 		
-		var result = target.get(receiver)
-		
-		when (result)
-		{
-			is Int   ->
-			{
-				result = result.toLong()
-			}
-			is Float ->
-			{
-				result = result.toDouble()
-			}
-		}
+		val result = target.get(receiver)
 		
 		val type = when (result)
 		{
-			is Long    -> Type.INT
+			is Value   -> result.type
+			is Byte    -> Type.BYT
+			is Int     -> Type.INT
+			is Long    -> Type.LNG
+			is Float   -> Type.FLT
 			is Double  -> Type.DEC
 			is String  -> Type.TXT
 			is Char    -> Type.LET

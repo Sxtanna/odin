@@ -10,21 +10,25 @@ data class Type(val name: String, val back: Types)
 		val NIL = Type("Nil", Types.NONE)
 		val ALL = Type("All", Basic("All"))
 		
+		val BYT = Type("Byt", Basic("Byt"))
 		val INT = Type("Int", Basic("Int"))
+		val LNG = Type("Lng", Basic("Lng"))
+		val FLT = Type("Flt", Basic("Flt"))
 		val DEC = Type("Dec", Basic("Dec"))
 		val BIT = Type("Bit", Basic("Bit"))
 		val LET = Type("Let", Basic("Let"))
 		val TXT = Type("Txt", Basic("Txt"))
-		val ARR = Type("Arr", Basic("Arr"))
 		
 		val builtIns = arrayOf(ALL,
 		                       NIL,
+		                       BYT,
 		                       INT,
+		                       LNG,
+		                       FLT,
 		                       DEC,
 		                       BIT,
 		                       LET,
-		                       TXT,
-		                       ARR)
+		                       TXT)
 	}
 	
 	override fun equals(other: Any?): Boolean

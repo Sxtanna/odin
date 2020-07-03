@@ -1726,7 +1726,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		val type = when (data)
 		{
-			is Long   ->
+			is Int   ->
 				"Int"
 			is Double ->
 				"Dec"

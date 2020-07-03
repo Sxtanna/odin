@@ -88,12 +88,42 @@ sealed class OperatorNum(final override val lvl: Lvl) : OperatorLvl()
 		
 		var result = evalNum(num0, num1)
 		
-		if (num0 !is Double && num1 !is Double)
+		val type = when (num1)
 		{
-			result = result.toDouble().roundToLong()
+			is Byte   -> Type.BYT
+			is Int    -> Type.INT
+			is Long   -> Type.LNG
+			is Float  -> Type.FLT
+			is Double -> Type.DEC
+			else      -> Type.INT
 		}
 		
-		stack.push(Value(if (result is Long) Type.INT else Type.DEC, result))
+		when (num1)
+		{
+			is Byte   -> {
+				result = result.toByte()
+			}
+			is Int    -> {
+				result = result.toInt()
+			}
+			is Long   -> {
+				result = result.toLong()
+			}
+			is Float  -> {
+				result = result.toFloat()
+			}
+		}
+		
+		if (num0 is Float || num1 is Float)
+		{
+			result = result.toFloat()
+		}
+		if (num0 is Double || num1 is Double)
+		{
+			result = result.toDouble()
+		}
+		
+		stack.push(Value(type, result))
 	}
 	
 	protected abstract fun evalNum(num0: Number, num1: Number): Number

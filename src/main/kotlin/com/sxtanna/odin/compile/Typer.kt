@@ -28,6 +28,7 @@ import com.sxtanna.odin.results.Some
 import com.sxtanna.odin.results.map
 import com.sxtanna.odin.runtime.Command
 import com.sxtanna.odin.runtime.CommandCase
+import com.sxtanna.odin.runtime.CommandCast
 import com.sxtanna.odin.runtime.CommandClazzDefine
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
@@ -669,6 +670,34 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandConsolePull(type, text)
 	}
 	
+	private fun PeekIterator<TokenData>.parseCast(cmds: MutableList<Command>)
+	{
+		require(next.type == BOUND)
+		{
+			"cast target must be in bounds"
+		}
+		
+		val type = requireNotNull(parseBound().singleOrNull())
+		{
+			"cast bounds can be only 1 type"
+		}
+		
+		require(next.type == PAREN_L)
+		{
+			"cast target must be in parentheses"
+		}
+		
+		val expr = mutableListOf<Command>()
+		parseShuntedExpression(expr)
+		
+		require(next.type == PAREN_R)
+		{
+			"cast target must be in parentheses"
+		}
+		
+		cmds += CommandCast(Route.of(expr), type)
+	}
+	
 	private fun PeekIterator<TokenData>.parseWhen(cmds: MutableList<Command>)
 	{
 		var token: TokenData
@@ -1289,6 +1318,8 @@ object Typer : (List<TokenData>) -> List<Command>
 				{
 					when (Word.find(token.data))
 					{
+						Word.CAST ->
+							parseCast(expr)
 						Word.PULL ->
 							parsePull(expr)
 						Word.PUSH ->

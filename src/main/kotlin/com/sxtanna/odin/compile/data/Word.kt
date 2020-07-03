@@ -20,6 +20,7 @@ enum class Word
 	STOP,
 	
 	JAVA,
+	CAST,
 	
 	CLASS,
 	TRAIT;

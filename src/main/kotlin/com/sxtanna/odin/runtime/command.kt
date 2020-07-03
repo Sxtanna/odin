@@ -13,6 +13,7 @@ import com.sxtanna.odin.runtime.base.Trait
 import com.sxtanna.odin.runtime.base.Tuple
 import com.sxtanna.odin.runtime.base.Types
 import com.sxtanna.odin.runtime.base.Value
+import com.sxtanna.odin.runtime.base.Wraps
 import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
@@ -463,6 +464,66 @@ data class CommandCase(val expr: Route, val conditions: Map<Route, Route>)
 			
 			break
 		}
+	}
+}
+
+data class CommandCast(val expr: Route, val type: Types)
+	: Command()
+{
+	override fun eval(stack: Stack, context: Context)
+	{
+		val result = Odin.eval(context, expr, stack)
+		if (result is None)
+		{
+			throw result.info
+		}
+		
+		var value = stack.pull()
+		
+		while (value is Value)
+		{
+			value = value.data
+		}
+		
+		value = when (type)
+		{
+			is Wraps ->
+			{
+				type.clazz.cast(value)
+			}
+			is Basic ->
+			{
+				when (type)
+				{
+					Type.BYT.back -> (value as Number).toByte()
+					Type.INT.back -> (value as Number).toInt()
+					Type.LNG.back -> (value as Number).toLong()
+					Type.FLT.back -> (value as Number).toFloat()
+					Type.DEC.back -> (value as Number).toDouble()
+					
+					
+					Type.TXT.back -> (value as? String) ?: value.toString()
+					Type.LET.back -> (value as? Char) ?: (value as? Number)?.toChar() ?: value.toString().first()
+					
+					Type.BIT.back ->
+					{
+						(value as? Boolean) ?: (value as? Number)?.let{ it.toDouble() > 0 } ?: false
+					}
+					else ->
+					{
+						value
+					}
+				}
+			}
+			else ->
+			{
+				value
+			}
+		}
+		
+		val type = requireNotNull(context.findType(type.name))
+		
+		stack.push(Value(type, value))
 	}
 }
 

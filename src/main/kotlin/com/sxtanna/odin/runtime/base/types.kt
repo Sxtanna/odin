@@ -56,6 +56,12 @@ data class Basic(override val name: String)
 	}
 }
 
+data class Wraps(val clazz: Class<*>)
+	: Types()
+{
+	override val name = clazz.name
+}
+
 // a single type that represents a list
 // (Txt, Int)
 data class Tuple(val part: List<Types>)

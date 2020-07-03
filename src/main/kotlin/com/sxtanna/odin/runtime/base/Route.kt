@@ -12,9 +12,7 @@ data class Route(val command: Command)
 	
 	fun eval(stack: Stack, context: Context)
 	{
-		//println("Evaluating $command")
 		command.eval(stack, context)
-		//println("$stack\n")
 	}
 	
 	fun unwrap(): List<Command>

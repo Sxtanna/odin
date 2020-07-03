@@ -8,7 +8,7 @@ data class Value(val type: Type, val data: Any)
 	{
 		return when (data)
 		{
-			is Value ->
+			is Value         ->
 			{
 				data.toPushString()
 				
@@ -23,7 +23,15 @@ data class Value(val type: Type, val data: Any)
 					if (it !is Value) it.toString() else it.toPushString()
 				}
 			}
-			else  ->
+			is ByteArray     -> data.contentToString()
+			is ShortArray    -> data.contentToString()
+			is IntArray      -> data.contentToString()
+			is LongArray     -> data.contentToString()
+			is FloatArray    -> data.contentToString()
+			is DoubleArray   -> data.contentToString()
+			is CharArray     -> data.contentToString()
+			is BooleanArray  -> data.contentToString()
+			else             ->
 			{
 				data.toString()
 			}

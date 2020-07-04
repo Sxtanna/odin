@@ -330,8 +330,14 @@ private fun compare(bitL: Any, bitR: Any): Int
 		"values [$bitL|${bitL::class.simpleName}] and [$bitR|${bitR::class.simpleName}] aren't comparable"
 	}
 	
-	val comL = (bitL as? Comparable<Any>) ?: return 0
-	val comR = (bitR as? Comparable<Any>) ?: return 0
+	val comL = requireNotNull(bitL as? Comparable<Any>)
+	{
+		"could not assert left operand:[$bitL] as comparable"
+	}
+	val comR = requireNotNull(bitR as? Comparable<Any>)
+	{
+		"could not assert right operand:[$bitR] as comparable"
+	}
 	
 	return comL.compareTo(comR)
 }

@@ -1,6 +1,7 @@
 package com.sxtanna.odin.runtime.base
 
 import com.sxtanna.odin.runtime.Command
+import com.sxtanna.odin.runtime.CommandNone
 import com.sxtanna.odin.runtime.Context
 
 data class Route(val command: Command)
@@ -76,8 +77,15 @@ data class Route(val command: Command)
 	
 	companion object
 	{
+		private val none = Route(CommandNone)
+		
 		fun of(commands: Collection<Command>): Route
 		{
+			if (commands.isEmpty())
+			{
+				return none
+			}
+			
 			val routes = listOf(*commands.toTypedArray()).map(::Route)
 			
 			routes.forEachIndexed()

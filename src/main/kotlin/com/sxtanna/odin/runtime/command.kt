@@ -34,6 +34,11 @@ sealed class Command
 	}
 }
 
+object CommandNone : Command()
+{
+	override fun eval(stack: Stack, context: Context) = Unit
+}
+
 object CommandStop : Command()
 {
 	override fun eval(stack: Stack, context: Context)

@@ -16,4 +16,27 @@ data class Scope(val name: String)
 		return "Scope(name='$name', props=$props, funcs=$funcs, types=$types)"
 	}
 	
+	override fun equals(other: Any?): Boolean
+	{
+		if (this === other) return true
+		if (other !is Scope) return false
+		
+		if (name != other.name) return false
+		if (props != other.props) return false
+		if (funcs != other.funcs) return false
+		if (types != other.types) return false
+		
+		return true
+	}
+	
+	override fun hashCode(): Int
+	{
+		var result = name.hashCode()
+		result = 31 * result + props.hashCode()
+		result = 31 * result + funcs.hashCode()
+		result = 31 * result + types.hashCode()
+		return result
+	}
+	
+	
 }

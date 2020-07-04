@@ -105,4 +105,22 @@ open class Context
 		return text
 	}
 	
+	override fun equals(other: Any?): Boolean
+	{
+		if (this === other) return true
+		if (other !is Context) return false
+		
+		if (globe != other.globe) return false
+		if (scope != other.scope) return false
+		
+		return true
+	}
+	
+	override fun hashCode(): Int
+	{
+		var result = globe.hashCode()
+		result = 31 * result + scope.hashCode()
+		return result
+	}
+	
 }

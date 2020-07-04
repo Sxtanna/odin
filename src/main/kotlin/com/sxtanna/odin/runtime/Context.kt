@@ -6,7 +6,7 @@ import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Type
 import com.sxtanna.odin.runtime.data.Prop
 
-class Context
+open class Context
 {
 	val stack = Stack()
 	val globe = Scope("global")
@@ -25,7 +25,7 @@ class Context
 	}
 	
 	
-	fun findProp(name: String, depth: Int = -1): Prop?
+	open fun findProp(name: String, depth: Int = -1): Prop?
 	{
 		var depth = depth
 		
@@ -46,7 +46,7 @@ class Context
 		return null
 	}
 	
-	fun findFunc(name: String): Func?
+	open fun findFunc(name: String): Func?
 	{
 		for (scope in scope)
 		{

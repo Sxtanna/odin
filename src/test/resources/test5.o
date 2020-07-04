@@ -1,7 +1,24 @@
 
-trait Named(val name: Txt)
+trait Sized(val size: Int)
 
-class Person::[Named]
+class ByteArray::[Sized] {
 
+    val bytes = java::["[B"](size)
 
-val person = Person { name: "Sxtanna" }
+    fun get(index: Int): Byt {
+        => bytes[index]
+    }
+
+    fun set(index: Int, value: Byt) {
+        bytes[index] = value
+    }
+
+}
+
+val array = ByteArray{ size: 5 }
+
+push array.bytes
+
+array.set(2, 2 + 2)
+
+push array.bytes

@@ -1,7 +1,5 @@
 package com.sxtanna.odin
 
-import com.sxtanna.odin.results.None
-import com.sxtanna.odin.results.Some
 import org.junit.jupiter.api.Test
 
 object Tests
@@ -17,27 +15,7 @@ object Tests
 	
 	private fun odinEvalFromFile(name: String)
 	{
-		val code = readTextFromFile(name)
-		
-		when (val result = Odin.proc(code))
-		{
-			is None ->
-			{
-				throw result.info
-			}
-			is Some ->
-			{
-				val data = Odin.pull(result.data.stack.peek() ?: Unit)
-				if (data == Unit || data == "Unit")
-				{
-					return
-				}
-				
-				println("==")
-				println(" Eval >> $data")
-				println("==")
-			}
-		}
+		Odin.evaluate(Odin.assemble(readTextFromFile(name)) ?: return)
 	}
 	
 	

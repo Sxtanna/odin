@@ -3,6 +3,7 @@ package com.sxtanna.odin.interop
 import com.sxtanna.odin.Odin
 import com.sxtanna.odin.results.None
 import com.sxtanna.odin.results.Some
+import com.sxtanna.odin.runtime.base.Value
 import java.io.Reader
 import javax.script.Bindings
 import javax.script.ScriptContext
@@ -84,23 +85,14 @@ class OdinScriptEngine : ScriptEngine
 	
 	override fun eval(script: String, bindings: Bindings): Any
 	{
-		when (val result = Odin.proc(script))
+		var value = Odin.evaluate(Odin.assemble(script) ?: return Unit).peek() ?: return Unit
+		
+		if (value is Value)
 		{
-			is None ->
-			{
-				throw result.info
-			}
-			is Some ->
-			{
-				val data = Odin.pull(result.data.stack.peek() ?: Unit)
-				if (data == Unit || data == "Unit")
-				{
-					return Unit
-				}
-				
-				return data
-			}
+			value = value.data
 		}
+		
+		return value
 	}
 	
 	

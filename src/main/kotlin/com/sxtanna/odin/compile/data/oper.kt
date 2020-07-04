@@ -85,44 +85,41 @@ sealed class OperatorNum(final override val lvl: Lvl) : OperatorLvl()
 			return OperatorCon.eval(stack)
 		}
 		
-		var result = evalNum(num0, num1)
+		var type = Type.ALL
+		var data = evalNum(num0, num1)
 		
-		val type = when (num1)
+		if (num0 is Byte || num1 is Byte)
 		{
-			is Byte   -> Type.BYT
-			is Int    -> Type.INT
-			is Long   -> Type.LNG
-			is Float  -> Type.FLT
-			is Double -> Type.DEC
-			else      -> Type.INT
+			type = Type.BYT
+			data = data.toByte()
 		}
-		
-		when (num1)
+		if (num0 is Int || num1 is Int)
 		{
-			is Byte   -> {
-				result = result.toByte()
-			}
-			is Int    -> {
-				result = result.toInt()
-			}
-			is Long   -> {
-				result = result.toLong()
-			}
-			is Float  -> {
-				result = result.toFloat()
-			}
+			type = Type.INT
+			data = data.toInt()
 		}
-		
+		if (num0 is Long || num1 is Long)
+		{
+			type = Type.LNG
+			data = data.toLong()
+		}
 		if (num0 is Float || num1 is Float)
 		{
-			result = result.toFloat()
+			type = Type.FLT
+			data = data.toFloat()
 		}
 		if (num0 is Double || num1 is Double)
 		{
-			result = result.toDouble()
+			type = Type.DEC
+			data = data.toDouble()
 		}
 		
-		stack.push(Value(type, result))
+		require(type != Type.ALL)
+		{
+			"number type could not be determined"
+		}
+		
+		stack.push(Value(type, data))
 	}
 	
 	protected abstract fun evalNum(num0: Number, num1: Number): Number

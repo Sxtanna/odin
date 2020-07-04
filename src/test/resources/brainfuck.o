@@ -31,6 +31,9 @@ loop (commandIndex++ < commandQueue.length()) {
         '.' {
             output += cast::[Let](array[index])
         }
+        ',' {
+            array[index] = pull::[Byt]("input value:")
+        }
         '[' {
             when (cast::[Int](array[index]) == 0) {
                 commandIndex++

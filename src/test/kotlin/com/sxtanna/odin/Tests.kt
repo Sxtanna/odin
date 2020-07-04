@@ -9,7 +9,7 @@ object Tests
 	
 	private fun readTextFromFile(name: String): String
 	{
-		return requireNotNull(ClassLoader.getSystemClassLoader().getResourceAsStream(name)?.bufferedReader()?.readText()?.replace("\r", ""))
+		return requireNotNull(ClassLoader.getSystemClassLoader().getResourceAsStream(name)?.bufferedReader()?.readText())
 		{
 			"Could not read code from file: $name"
 		}

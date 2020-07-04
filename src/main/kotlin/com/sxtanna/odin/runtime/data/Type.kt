@@ -49,5 +49,4 @@ data class Type(val name: String, val back: Types)
 		return back.hashCode()
 	}
 	
-	
 }

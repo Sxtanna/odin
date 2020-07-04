@@ -1,8 +1,8 @@
 package com.sxtanna.odin.runtime.base
 
 import com.sxtanna.odin.runtime.data.Func
-import com.sxtanna.odin.runtime.data.Type
 import com.sxtanna.odin.runtime.data.Prop
+import com.sxtanna.odin.runtime.data.Type
 
 data class Scope(val name: String)
 {

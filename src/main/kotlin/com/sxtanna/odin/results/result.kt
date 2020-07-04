@@ -40,10 +40,9 @@ data class None<T : Any>(val info: Throwable)
 	: Result<T>()
 
 
-
 fun <I : Any, O : Any> Result<I>.map(function: (I) -> O?): Result<O>
 {
-	return when(this)
+	return when (this)
 	{
 		is None ->
 		{

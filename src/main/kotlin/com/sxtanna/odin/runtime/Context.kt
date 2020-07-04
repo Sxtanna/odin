@@ -3,8 +3,8 @@ package com.sxtanna.odin.runtime
 import com.sxtanna.odin.runtime.base.Scope
 import com.sxtanna.odin.runtime.base.Stack
 import com.sxtanna.odin.runtime.data.Func
-import com.sxtanna.odin.runtime.data.Type
 import com.sxtanna.odin.runtime.data.Prop
+import com.sxtanna.odin.runtime.data.Type
 
 open class Context
 {

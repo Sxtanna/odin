@@ -139,23 +139,28 @@ data class CommandPropertyAssign(val name: String)
 				{
 					when (property.type)
 					{
-						Type.BYT.back -> {
+						Type.BYT.back ->
+						{
 							data = data.toByte()
 							type = Type.BYT
 						}
-						Type.INT.back -> {
+						Type.INT.back ->
+						{
 							data = data.toInt()
 							type = Type.INT
 						}
-						Type.LNG.back -> {
+						Type.LNG.back ->
+						{
 							data = data.toLong()
 							type = Type.LNG
 						}
-						Type.FLT.back -> {
+						Type.FLT.back ->
+						{
 							data = data.toFloat()
 							type = Type.FLT
 						}
-						Type.DEC.back -> {
+						Type.DEC.back ->
+						{
 							data = data.toDouble()
 							type = Type.DEC
 						}
@@ -496,15 +501,15 @@ data class CommandCast(val expr: Route, val type: Types)
 					
 					Type.BIT.back ->
 					{
-						(value as? Boolean) ?: (value as? Number)?.let{ it.toDouble() > 0 } ?: false
+						(value as? Boolean) ?: (value as? Number)?.let { it.toDouble() > 0 } ?: false
 					}
-					else ->
+					else          ->
 					{
 						value
 					}
 				}
 			}
-			else ->
+			else     ->
 			{
 				value
 			}
@@ -888,7 +893,7 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		
 		funcStack = funcStack.flip()
 		
-		val result = body?.let{ Odin.eval(receiver, it, funcStack) }
+		val result = body?.let { Odin.eval(receiver, it, funcStack) }
 		
 		if (result != null && result is Some)
 		{

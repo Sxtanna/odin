@@ -12,10 +12,7 @@ sealed class Types
 		return matches(type.back)
 	}
 	
-	open fun matches(type: Types): Boolean
-	{
-		return false
-	}
+	abstract fun matches(type: Types): Boolean
 	
 	
 	final override fun equals(other: Any?): Boolean
@@ -60,6 +57,11 @@ data class Wraps(val clazz: Class<*>)
 	: Types()
 {
 	override val name = clazz.name
+	
+	override fun matches(type: Types): Boolean
+	{
+		return type is Wraps && type.clazz.isAssignableFrom(clazz)
+	}
 }
 
 // a single type that represents a list
@@ -100,20 +102,39 @@ data class Tuple(val part: List<Types>)
 data class Trait(override val name: String)
 	: Types()
 {
-	val scope = Scope(name)
-	val types = mutableListOf<Types>()
+	val supes = mutableListOf<Types>()
 	
-	var route: Route? = null
+	var route = null as? Route?
+	
+	
+	override fun matches(type: Types): Boolean
+	{
+		return (type is Trait && type.name == name) || (type is Clazz && type.supes.contains(this))
+	}
 	
 	override fun toString(): String
 	{
-		return "Trait[$name]::$types"
+		return "Trait[$name]::$supes"
 	}
 }
 
 data class Clazz(override val name: String)
 	: Types()
 {
-	val scope = Scope(name)
-	val types = mutableListOf<Types>()
+	val supes = mutableListOf<Types>()
+	
+	var route = null as? Route?
+	
+	
+	override fun matches(type: Types): Boolean
+	{
+		return (type is Clazz && type.name == name)
+	}
+	
+	
+	override fun toString(): String
+	{
+		return "Class[$name]::$supes"
+	}
+	
 }

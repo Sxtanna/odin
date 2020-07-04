@@ -15,6 +15,7 @@ import com.sxtanna.odin.runtime.base.Types
 import com.sxtanna.odin.runtime.base.Value
 import com.sxtanna.odin.runtime.base.Wraps
 import com.sxtanna.odin.runtime.data.Func
+import com.sxtanna.odin.runtime.data.Inst
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 import java.lang.reflect.Constructor
@@ -170,7 +171,7 @@ data class CommandPropertyAssign(val name: String)
 			}
 			else     ->
 			{
-				throw UnsupportedOperationException("Cannot assign $property a value without a type")
+				throw UnsupportedOperationException("Cannot assign $property a value without a type `$value`")
 			}
 		}
 	}
@@ -250,31 +251,14 @@ data class CommandClazzDefine(val clazz: Clazz)
 	}
 }
 
-data class CommandTraitCreate(val traitName: String)
+data class CommandClazzCreate(val clazzName: String, val body: Route)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		TODO("not implemented")
-	}
-}
-
-data class CommandClazzCreate(val clazzName: String)
-	: Command()
-{
-	override fun eval(stack: Stack, context: Context)
-	{
-		val type = requireNotNull(context.findType(clazzName))
-		{
-			"class $clazzName undefined in scope"
-		}
+		val instance = makeInstance(clazzName, stack, context, body)
 		
-		val clazz = (type.back as Clazz).copy()
-		
-		repeat(clazz.types.size)
-		{
-			val trait = stack.peek()
-		}
+		stack.push(Value(instance.type, instance))
 	}
 }
 
@@ -852,15 +836,6 @@ data class CommandFunctionAccess(val name: String)
 	}
 }
 
-data class CommandInstanceDefine(val name: String)
-	: Command()
-{
-	override fun eval(stack: Stack, context: Context)
-	{
-	
-	}
-}
-
 data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 	: Command()
 {
@@ -879,7 +854,7 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		repeat(size)
 		{
 			var data = stack.pull()
-			if (data is Value)
+			if (data is Value && receiver !is Inst)
 			{
 				data = data.data
 			}
@@ -887,7 +862,45 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			args += data
 		}
 		
+		if (receiver is Inst)
+		{
+			callFunctionInst(receiver, args, stack)
+		}
+		else
+		{
+			callFunctionJava(receiver, args, stack)
+		}
+	}
+	
+	private fun callFunctionInst(receiver: Inst, args: List<Any>, stack: Stack)
+	{
+		val func = requireNotNull(receiver.findFunc(name))
+		{
+			"function $name not defined in ${receiver.type}"
+		}
 		
+		val push = func.push
+		val body = func.body
+		
+		var funcStack = Stack()
+		
+		args.forEach(funcStack::push)
+		
+		funcStack = funcStack.flip()
+		
+		val result = body?.let{ Odin.eval(receiver, it, funcStack) }
+		
+		if (result != null && result is Some)
+		{
+			for (entry in push)
+			{
+				stack.push(funcStack.pull())
+			}
+		}
+	}
+	
+	private fun callFunctionJava(receiver: Any, args: List<Any>, stack: Stack)
+	{
 		val target: Method
 		val params: Array<Any>
 		
@@ -940,7 +953,6 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 	}
 }
 
-
 data class CommandInstancePropertyAccess(val name: String)
 	: Command()
 {
@@ -956,6 +968,35 @@ data class CommandInstancePropertyAccess(val name: String)
 		}
 		
 		
+		if (receiver is Inst)
+		{
+			callPropertyInst(receiver, stack)
+		}
+		else
+		{
+			callPropertyJava(receiver, stack)
+		}
+		
+	}
+	
+	
+	private fun callPropertyInst(receiver: Inst, stack: Stack)
+	{
+		val prop = requireNotNull(receiver.findProp(name))
+		{
+			"property $name not defined in ${receiver.type}"
+		}
+		
+		val value = requireNotNull(prop.data)
+		{
+			"property '$name' has not been assigned"
+		}
+		
+		stack.push(value)
+	}
+	
+	private fun callPropertyJava(receiver: Any, stack: Stack)
+	{
 		if (receiver.javaClass.isArray)
 		{
 			require(name == "length")
@@ -1158,4 +1199,39 @@ private fun resolveMatching(func: Executable, args: List<Any>): Pair<Executable,
 	}
 	
 	return func to pass
+}
+
+
+private fun makeInstance(name: String, stack: Stack, context: Context, body: Route?): Inst
+{
+	val type = requireNotNull(context.findType(name))
+	{
+		"trait or class $name undefined in context"
+	}
+	
+	val supes = (type.back as? Trait)?.supes ?: (type.back as Clazz).supes
+	val route = (type.back as? Trait)?.route ?: (type.back as Clazz).route
+	
+	val instance = Inst(type)
+	
+	supes.forEach()
+	{ superType ->
+		val superTrait = makeInstance(superType.name, stack, context, null)
+		
+		instance.insts[superTrait.type] = superTrait
+	}
+	
+	body?.let { Odin.eval(instance, it, stack) }
+	
+	if (route != null)
+	{
+		val result = Odin.eval(instance, route, stack)
+		
+		if (result is None)
+		{
+			throw result.info
+		}
+	}
+	
+	return instance
 }

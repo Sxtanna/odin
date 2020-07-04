@@ -29,6 +29,7 @@ import com.sxtanna.odin.results.map
 import com.sxtanna.odin.runtime.Command
 import com.sxtanna.odin.runtime.CommandCase
 import com.sxtanna.odin.runtime.CommandCast
+import com.sxtanna.odin.runtime.CommandClazzCreate
 import com.sxtanna.odin.runtime.CommandClazzDefine
 import com.sxtanna.odin.runtime.CommandConsolePull
 import com.sxtanna.odin.runtime.CommandConsolePush
@@ -551,8 +552,6 @@ object Typer : (List<TokenData>) -> List<Command>
 			}
 			
 			func.push["ret0"] = parseType()
-			
-			// println("func ${func.name} push: ${func.push}")
 		}
 		
 		ignoreNewLines()
@@ -1064,10 +1063,10 @@ object Typer : (List<TokenData>) -> List<Command>
 			"trait missing props or body"
 		}
 		
+		val props = mutableListOf<Route>()
+		
 		if (token.type == PAREN_L) // parse props
 		{
-			val props = mutableListOf<Command>()
-			
 			while (!empty)
 			{
 				token = next
@@ -1092,32 +1091,16 @@ object Typer : (List<TokenData>) -> List<Command>
 					continue
 				}
 				
-				if (token.type == WORD)
+				require(token.type == WORD && Word.find(token.data).let { it == Word.VAR || it == Word.VAL })
 				{
-					val word = requireNotNull(Word.find(token.data))
-					{
-						"word ${token.data} not found!"
-					}
-					
-					when (word)
-					{
-						Word.VAL,
-						Word.VAR ->
-							parseProp(props, word == Word.VAR, false)
-						else     ->
-						{
-							throw UnsupportedOperationException("word out of place: $token")
-						}
-					}
-					
-					continue
+					"token out of place $token, must be var or val"
 				}
 				
-				throw UnsupportedOperationException("token out of place: $token")
+				val prop = mutableListOf<Command>()
+				parseProp(prop, token.data == "var", false)
+				
+				props += Route.of(prop)
 			}
-			
-			val route = Route.of(props)
-			trait.route = route
 			
 			if (!empty)
 			{
@@ -1127,13 +1110,26 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		if (token.type == BOUND)
 		{
-			trait.types += parseBound()
+			trait.supes += parseBound()
+			
+			if (!empty)
+			{
+				token = next
+			}
 		}
+		
+		ignoreNewLines()
+		
+		val funcs = mutableListOf<Route>()
 		
 		if (token.type == BRACE_L) // parse body
 		{
-			// trouble time
+			ignoreNewLines()
+			
+			parseBody(funcs, funcs, allowProps = false)
 		}
+		
+		trait.route = Route.of(props.map(::CommandRoute) + funcs.map(::CommandRoute))
 	}
 	
 	private fun PeekIterator<TokenData>.parseClazz(cmds: MutableList<Command>)
@@ -1160,12 +1156,72 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		if (token.type == BOUND)
 		{
-			clazz.types += parseBound()
+			clazz.supes += parseBound()
+			
+			if (!empty)
+			{
+				token = next
+			}
 		}
+		
+		ignoreNewLines()
+		
+		val funcs = mutableListOf<Route>()
+		val props = mutableListOf<Route>()
 		
 		if (token.type == BRACE_L) // parse body
 		{
-			// trouble time
+			ignoreNewLines()
+			
+			parseBody(funcs, props, allowProps = true)
+		}
+		
+		clazz.route = Route.of(funcs.map(::CommandRoute) + props.map(::CommandRoute))
+	}
+	
+	
+	private fun PeekIterator<TokenData>.parseBody(funcs: MutableList<Route>, props: MutableList<Route>, allowProps: Boolean)
+	{
+		var token: TokenData
+		
+		while (!empty)
+		{
+			token = next
+			
+			if (token.type == NEWLINE)
+			{
+				continue
+			}
+			if (token.type == BRACE_R)
+			{
+				break
+			}
+			
+			val word = Word.find(token.data)
+			require(token.type == WORD && word == Word.FUN || word == Word.VAR || word == Word.VAL)
+			{
+				"trait and class bodies can only contain functions and properties"
+			}
+			
+			require(allowProps || word == Word.FUN)
+			{
+				"body cannot contain properties"
+			}
+			
+			if (word == Word.FUN)
+			{
+				val func = mutableListOf<Command>()
+				parseFunc(func)
+				
+				funcs += Route.of(func)
+			}
+			else
+			{
+				val prop = mutableListOf<Command>()
+				parseProp(prop, word == Word.VAR, true)
+				
+				props += Route.of(prop)
+			}
 		}
 	}
 	
@@ -1541,7 +1597,6 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseNew(cmds: MutableList<Command>, data: TokenData)
 	{
-		println("parsing new ${data.data}")
 		ignoreNewLines()
 		
 		var token: TokenData
@@ -1560,6 +1615,15 @@ object Typer : (List<TokenData>) -> List<Command>
 		{
 			token = next
 			
+			if (token.type == NEWLINE)
+			{
+				continue
+			}
+			if (token.type == BRACE_R)
+			{
+				break
+			}
+			
 			if (token.type == NAME)
 			{
 				val name = token.data
@@ -1573,10 +1637,12 @@ object Typer : (List<TokenData>) -> List<Command>
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
-				println("$name: $expr")
+				body += CommandRoute(Route.of(expr))
+				body += CommandPropertyAssign(name)
 			}
 		}
 		
+		cmds += CommandClazzCreate(data.data, Route.of(body))
 	}
 	
 	private fun PeekIterator<TokenData>.parseTup(funcParams: Boolean = false): List<List<Command>>

@@ -65,4 +65,10 @@ object Tests
 		odinEvalFromFile("brainfuck.o")
 	}
 	
+	@Test
+	internal fun `test create byte array`()
+	{
+		odinEvalFromFile("test5.o")
+	}
+	
 }

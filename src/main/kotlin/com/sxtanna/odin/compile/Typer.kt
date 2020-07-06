@@ -175,9 +175,12 @@ object Typer : (List<TokenData>) -> List<Command>
 		val cmds = mutableListOf<Command>()
 		val iter = PeekIterator(toks)
 		
+		iter.ignoreNewLines()
+		
 		while (!iter.empty)
 		{
 			iter.parseMain(cmds)
+			iter.ignoreNewLines()
 		}
 		
 		return cmds

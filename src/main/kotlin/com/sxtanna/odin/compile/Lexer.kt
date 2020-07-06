@@ -307,6 +307,11 @@ object Lexer : (String) -> List<TokenData>
 						{
 							while (iter.peek(amount = 0) != '*' || iter.peek(amount = 1) != '/')
 							{
+								if (iter.peek(amount = 0) == '\n')
+								{
+									line++
+								}
+								
 								iter.move(amount = 1)
 							}
 							

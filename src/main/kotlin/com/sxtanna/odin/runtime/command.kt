@@ -1061,7 +1061,7 @@ data class CommandJavaTypeDefine(val clazz: Class<*>, val size: Int)
 		var type = context.findType(clazz.name)
 		if (type == null)
 		{
-			type = Type(clazz.name, Basic(clazz.name))
+			type = Type(clazz.name, Wraps(clazz))
 			
 			context.defineType(type)
 		}

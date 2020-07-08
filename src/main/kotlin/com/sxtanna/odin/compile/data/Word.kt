@@ -27,13 +27,13 @@ enum class Word
 	
 	companion object
 	{
-		val values = values().toSet()
-		val asName = values.map { it.name.toLowerCase() }
+		val values = values()
+		val asName = values.associateBy { it.name.toLowerCase() }
 		
 		
 		fun find(name: String): Word?
 		{
-			return values.find { it.name.equals(name, true) }
+			return asName[name.toLowerCase()]
 		}
 	}
 }

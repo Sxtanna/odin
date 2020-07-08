@@ -1,35 +1,27 @@
 package com.sxtanna.odin.runtime
 
 import com.sxtanna.odin.runtime.base.Scope
-import com.sxtanna.odin.runtime.base.Stack
 import com.sxtanna.odin.runtime.data.Func
 import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 
-open class Context
+open class Context(val name: String)
 {
-	val stack = Stack()
-	val globe = Scope("global")
-	
-	var redos = 0
-	val scope = ArrayDeque<Scope>()
+	val scopes = ArrayDeque<Scope>()
 	
 	init
 	{
-		Type.builtIns.forEach()
-		{
-			globe.types[it.name] = it
-		}
+		enterScope(Scope(name))
 		
-		scope.add(globe)
+		Type.builtIns.forEach(::defineType)
 	}
 	
 	
 	open fun findProp(name: String, depth: Int = -1): Prop?
 	{
-		var depth = depth
+		var remaining = depth
 		
-		for (scope in scope)
+		for (scope in scopes)
 		{
 			val prop = scope.props[name]
 			if (prop != null)
@@ -37,7 +29,7 @@ open class Context
 				return prop
 			}
 			
-			if (depth != -1 && --depth <= 0)
+			if (remaining != -1 && --remaining <= 0)
 			{
 				break
 			}
@@ -48,7 +40,7 @@ open class Context
 	
 	open fun findFunc(name: String): Func?
 	{
-		for (scope in scope)
+		for (scope in scopes)
 		{
 			return scope.funcs[name] ?: continue
 		}
@@ -58,7 +50,7 @@ open class Context
 	
 	fun findType(name: String): Type?
 	{
-		for (scope in scope)
+		for (scope in scopes)
 		{
 			return scope.types[name] ?: continue
 		}
@@ -69,58 +61,57 @@ open class Context
 	
 	fun defineProp(prop: Prop)
 	{
-		scope[0].props[prop.name] = prop.copyProp()
+		scopes[0].props[prop.name] = prop.copyProp()
 	}
 	
 	fun defineFunc(func: Func)
 	{
-		scope[0].funcs[func.name] = func
+		scopes[0].funcs[func.name] = func
 	}
 	
 	fun defineType(type: Type)
 	{
-		scope[0].types[type.name] = type
+		scopes[0].types[type.name] = type
 	}
 	
 	
-	fun joinScope(join: Scope)
+	fun enterScope(scope: Scope)
 	{
-		scope.addFirst(join)
+		scopes.addFirst(scope)
 	}
 	
-	fun quitScope()
+	fun leaveScope(): Scope
 	{
-		scope.removeFirst()
-	}
-	
-	
-	override fun toString(): String
-	{
-		val text =
-			"""
-				Stack: $stack
-				Scope: $scope
-			""".trimIndent()
+		require(scopes.size > 1)
+		{
+			"context cannot leave it's primary scope"
+		}
 		
-		return text
+		return scopes.removeFirst()
 	}
+	
 	
 	override fun equals(other: Any?): Boolean
 	{
 		if (this === other) return true
 		if (other !is Context) return false
 		
-		if (globe != other.globe) return false
-		if (scope != other.scope) return false
+		if (name != other.name) return false
+		if (scopes != other.scopes) return false
 		
 		return true
 	}
 	
 	override fun hashCode(): Int
 	{
-		var result = globe.hashCode()
-		result = 31 * result + scope.hashCode()
+		var result = name.hashCode()
+		result = 31 * result + scopes.hashCode()
 		return result
+	}
+	
+	override fun toString(): String
+	{
+		return "Context(name='$name', scopes=$scopes)"
 	}
 	
 }

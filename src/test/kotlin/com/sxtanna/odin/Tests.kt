@@ -5,6 +5,11 @@ import org.junit.jupiter.api.Test
 object Tests
 {
 	
+	init
+	{
+		Odin
+	}
+	
 	private fun readTextFromFile(name: String): String
 	{
 		return requireNotNull(ClassLoader.getSystemClassLoader().getResourceAsStream(name)?.bufferedReader()?.readText())
@@ -49,4 +54,9 @@ object Tests
 		odinEvalFromFile("test5.o")
 	}
 	
+	@Test
+	internal fun `test use builtins`()
+	{
+		odinEvalFromFile("test16.o")
+	}
 }

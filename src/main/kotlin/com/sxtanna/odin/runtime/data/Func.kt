@@ -39,5 +39,4 @@ data class Func(val name: String)
 		return result
 	}
 	
-	
 }

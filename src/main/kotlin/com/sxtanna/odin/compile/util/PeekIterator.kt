@@ -7,7 +7,7 @@ data class PeekIterator<T : Any>(val data: List<T>)
 		private set
 	
 	val empty: Boolean
-		get() = index > data.lastIndex
+		get() = index > (data.size - 1)
 	
 	
 	val peek: T?

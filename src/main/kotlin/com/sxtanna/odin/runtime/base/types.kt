@@ -1,5 +1,7 @@
 package com.sxtanna.odin.runtime.base
 
+import com.sxtanna.odin.runtime.data.Func
+import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 
 sealed class Types
@@ -56,7 +58,7 @@ data class Basic(override val name: String)
 data class Wraps(val clazz: Class<*>)
 	: Types()
 {
-	override val name = clazz.name
+	override val name: String = clazz.name
 	
 	override fun matches(type: Types): Boolean
 	{
@@ -102,35 +104,75 @@ data class Tuple(val part: List<Types>)
 data class Trait(override val name: String)
 	: Types()
 {
-	val supes = mutableListOf<Types>()
+	// props that need to be initialized
+	val props = mutableMapOf<String, Prop>()
+	val funcs = mutableMapOf<String, Func>()
 	
-	var route = null as? Route?
+	
+	fun addProp(prop: Prop)
+	{
+		val prev = props.put(prop.name, prop)
+		require(prev == null)
+		{
+			"property ${prop.name} already defined as $prev"
+		}
+	}
+	
+	fun addFunc(func: Func)
+	{
+		val prev = funcs.put(func.name, func)
+		require(prev == null)
+		{
+			"function ${func.name} already defined as $prev"
+		}
+	}
 	
 	
 	override fun matches(type: Types): Boolean
 	{
-		return (type is Trait && type.name == name) || (type is Clazz && type.supes.contains(this))
+		return (type is Trait && type.name == name) || (type is Clazz && type.supes.contains(this.name))
 	}
 	
 	override fun toString(): String
 	{
-		return "Trait[$name]::$supes"
+		return "Trait[$name]($props)$funcs"
 	}
 }
 
 data class Clazz(override val name: String)
 	: Types()
 {
-	val supes = mutableListOf<Types>()
-	
 	var route = null as? Route?
+	
+	val supes = mutableListOf<String>()
+	
+	val props = mutableMapOf<String, Prop>()
+	val funcs = mutableMapOf<String, Func>()
+	
+	
+	fun addProp(prop: Prop)
+	{
+		val prev = props.put(prop.name, prop)
+		require(prev == null)
+		{
+			"property ${prop.name} already defined as $prev"
+		}
+	}
+	
+	fun addFunc(func: Func)
+	{
+		val prev = funcs.put(func.name, func)
+		require(prev == null)
+		{
+			"function ${func.name} already defined as $prev"
+		}
+	}
 	
 	
 	override fun matches(type: Types): Boolean
 	{
 		return (type is Clazz && type.name == name)
 	}
-	
 	
 	override fun toString(): String
 	{

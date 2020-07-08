@@ -1,0 +1,95 @@
+trait Sized(val size: Int)
+
+trait Array
+{
+    fun get(index: Int): All
+
+    fun set(index: Int, value: All)
+}
+
+trait Collection
+{
+    fun add(value: All): Bit
+}
+
+class BytArray::[Sized, Array]
+{
+    val values = java::["[B"](size)
+
+    fun get(index: Int): Byt
+    {
+        => values[index]
+    }
+
+    fun set(index: Int, value: Byt)
+    {
+        values[index] = value
+    }
+}
+
+class Hash
+{
+    val hash = java::["java.util.HashMap"]
+
+    fun get(index: All): (Bit, All)
+    {
+        val value = hash[index]
+        => (type(value) != "Nil", value)
+    }
+
+    fun set(index: All, value: All)
+    {
+        hash[index] = value
+    }
+
+    fun has(index: All): Bit
+    {
+        => type(hash[index]) != "Nil"
+    }
+
+    fun del(index: All)
+    {
+        hash.remove(index)
+    }
+
+    fun size: Int
+    {
+        => hash.size()
+    }
+
+    fun indexList: All
+    {
+        => java::["java.util.ArrayList"](hash.keySet())
+    }
+
+    fun valueList: All
+    {
+        => java::["java.util.ArrayList"](hash.values())
+    }
+
+    fun joinToString(separator: Txt): Txt
+    {
+        var text = ""
+        val size = size()
+
+        val indexList = indexList()
+        val valueList = valueList()
+
+        text += "{\n"
+
+        var index = -1
+        loop (index++ < size)
+        {
+            text += "   ${indexList[index]}: ${valueList[index]}"
+
+            when (index < size - 1)
+            {
+                text += separator
+            }
+        }
+
+        text += "\n}"
+
+        => text
+    }
+}

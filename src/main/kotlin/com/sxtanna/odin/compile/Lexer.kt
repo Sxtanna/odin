@@ -244,7 +244,7 @@ object Lexer : (String) -> List<TokenData>
 					if (prev != null && prev.type == TokenType.OPER && (prev.data == "-" || prev.data == "+"))
 					{
 						char--
-						toks.removeAt(toks.lastIndex)
+						toks.removeAt(toks.size - 1)
 						
 						value = prev.data + value
 					}

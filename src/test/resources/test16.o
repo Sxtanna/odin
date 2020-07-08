@@ -1,0 +1,19 @@
+val sized = 4
+val array = BytArray { size: sized }
+
+push array.values
+
+array.set(2, 3)
+
+push array.values
+
+
+val thisHash = Hash{}
+val thatHash = Hash{}
+
+thatHash.set(0, "Hello")
+thatHash.set(1, "World")
+
+thisHash.set("hash", thatHash)
+
+push thisHash.get("hash")[1].joinToString("\n")

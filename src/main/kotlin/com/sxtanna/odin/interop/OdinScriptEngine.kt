@@ -1,8 +1,6 @@
 package com.sxtanna.odin.interop
 
 import com.sxtanna.odin.Odin
-import com.sxtanna.odin.results.None
-import com.sxtanna.odin.results.Some
 import com.sxtanna.odin.runtime.base.Value
 import java.io.Reader
 import javax.script.Bindings

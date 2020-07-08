@@ -2,48 +2,8 @@ package com.sxtanna.odin.runtime.data
 
 import com.sxtanna.odin.runtime.Context
 
-data class Inst(val type: Type, val insts: MutableMap<Type, Inst> = mutableMapOf()) : Context()
+data class Inst(val type: Type) : Context(type.name)
 {
-	override fun findProp(name: String, depth: Int): Prop?
-	{
-		var prop = super.findProp(name, -1)
-		if (prop != null)
-		{
-			return prop
-		}
-		
-		for (inst in insts.values)
-		{
-			prop = inst.findProp(name)
-			if (prop != null)
-			{
-				break
-			}
-		}
-		
-		return prop
-	}
-	
-	override fun findFunc(name: String): Func?
-	{
-		var func = super.findFunc(name)
-		if (func != null)
-		{
-			return func
-		}
-		
-		for (inst in insts.values)
-		{
-			func = inst.findFunc(name)
-			if (func != null)
-			{
-				break
-			}
-		}
-		
-		return func
-	}
-	
 	
 	override fun equals(other: Any?): Boolean
 	{
@@ -52,7 +12,6 @@ data class Inst(val type: Type, val insts: MutableMap<Type, Inst> = mutableMapOf
 		if (!super.equals(other)) return false
 		
 		if (type != other.type) return false
-		if (insts != other.insts) return false
 		
 		return true
 	}
@@ -61,7 +20,6 @@ data class Inst(val type: Type, val insts: MutableMap<Type, Inst> = mutableMapOf
 	{
 		var result = super.hashCode()
 		result = 31 * result + type.hashCode()
-		result = 31 * result + insts.hashCode()
 		return result
 	}
 	

@@ -2,8 +2,6 @@ package com.sxtanna.odin.runtime
 
 import com.sxtanna.odin.Odin
 import com.sxtanna.odin.compile.data.Oper
-import com.sxtanna.odin.results.None
-import com.sxtanna.odin.results.Some
 import com.sxtanna.odin.runtime.base.Basic
 import com.sxtanna.odin.runtime.base.Clazz
 import com.sxtanna.odin.runtime.base.Route
@@ -100,7 +98,7 @@ data class CommandPropertyDefine(val prop: Prop, val depth: Int = -1)
 	{
 		require(context.findProp(prop.name, depth) == null)
 		{
-			"property ${prop.name} already defined in scope ${context.scope[0].name}"
+			"property ${prop.name}|${depth} already defined in scope ${context.scopes[0].name}"
 		}
 		
 		context.defineProp(prop)
@@ -256,12 +254,12 @@ data class CommandClazzDefine(val clazz: Clazz)
 	}
 }
 
-data class CommandClazzCreate(val clazzName: String, val body: Route)
+data class CommandClazzCreate(val clazzName: String, val init: Route)
 	: Command()
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val instance = makeInstance(clazzName, stack, context, body)
+		val instance = makeInstance(clazzName, stack, context, init)
 		
 		stack.push(Value(instance.type, instance))
 	}
@@ -272,11 +270,7 @@ data class CommandStackPush(var expr: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val value = Odin.eval(context, expr, stack)
-		if (value is None)
-		{
-			throw value.info
-		}
+		Odin.eval(context, expr, stack)
 	}
 }
 
@@ -378,11 +372,7 @@ data class CommandWhen(val expr: Route, val conditionPass: Route, val conditionF
 	override fun eval(stack: Stack, context: Context)
 	{
 		// evaluate condition
-		val evalExpr = Odin.eval(context, expr, stack)
-		if (evalExpr is None)
-		{
-			throw evalExpr.info
-		}
+		Odin.eval(context, expr, stack)
 		
 		// resolve result of condition
 		var pass = stack.pull()
@@ -397,7 +387,7 @@ data class CommandWhen(val expr: Route, val conditionPass: Route, val conditionF
 		}
 		
 		// evaluate branches of conditions
-		val result = when
+		when
 		{
 			pass                  ->
 			{
@@ -407,15 +397,6 @@ data class CommandWhen(val expr: Route, val conditionPass: Route, val conditionF
 			{
 				Odin.eval(context, conditionFail, stack)
 			}
-			else                  ->
-			{
-				null
-			}
-		}
-		
-		if (result != null && result is None)
-		{
-			throw result.info
 		}
 	}
 }
@@ -426,22 +407,14 @@ data class CommandCase(val expr: Route, val conditions: Map<Route, Route>)
 	override fun eval(stack: Stack, context: Context)
 	{
 		// evaluate expression
-		val evalExpr = Odin.eval(context, expr, stack)
-		if (evalExpr is None)
-		{
-			throw evalExpr.info
-		}
+		Odin.eval(context, expr, stack)
 		
 		// resolve result of expression
 		val target = stack.pull()
 		
 		for ((cond, case) in conditions)
 		{
-			val evalCond = Odin.eval(context, cond, stack)
-			if (evalCond is None)
-			{
-				throw evalCond.info
-			}
+			Odin.eval(context, cond, stack)
 			
 			val value = stack.pull()
 			
@@ -450,11 +423,7 @@ data class CommandCase(val expr: Route, val conditions: Map<Route, Route>)
 				continue
 			}
 			
-			val evalCase = Odin.eval(context, case, stack)
-			if (evalCase is None)
-			{
-				throw evalCase.info
-			}
+			Odin.eval(context, case, stack)
 			
 			break
 		}
@@ -466,11 +435,7 @@ data class CommandCast(val expr: Route, val type: Types)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val result = Odin.eval(context, expr, stack)
-		if (result is None)
-		{
-			throw result.info
-		}
+		Odin.eval(context, expr, stack)
 		
 		var value = stack.pull()
 		
@@ -546,11 +511,7 @@ data class CommandTypeQuery(val expr: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val evalExpr = Odin.eval(context, expr, stack)
-		if (evalExpr is None)
-		{
-			throw evalExpr.info
-		}
+		Odin.eval(context, expr, stack)
 		
 		val value = stack.pull()
 		if (value !is Value)
@@ -567,11 +528,7 @@ data class CommandGet(val indexExpr: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val result = Odin.eval(context, indexExpr, stack)
-		if (result is None)
-		{
-			throw result.info
-		}
+		Odin.eval(context, indexExpr, stack)
 		
 		var index = stack.pull()
 		while (index is Value)
@@ -628,7 +585,7 @@ data class CommandGet(val indexExpr: Route)
 			is String  -> Type.TXT
 			is Char    -> Type.LET
 			is Boolean -> Type.BIT
-			else       -> Type.ALL
+			else       -> Type.NIL
 		}
 		
 		stack.push(Value(type, data ?: Unit))
@@ -640,11 +597,7 @@ data class CommandSet(val indexExpr: Route, val valueExpr: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val indexResult = Odin.eval(context, indexExpr, stack)
-		if (indexResult is None)
-		{
-			throw indexResult.info
-		}
+		Odin.eval(context, indexExpr, stack)
 		
 		var index = stack.pull()
 		while (index is Value)
@@ -652,11 +605,7 @@ data class CommandSet(val indexExpr: Route, val valueExpr: Route)
 			index = index.data
 		}
 		
-		val valueResult = Odin.eval(context, valueExpr, stack)
-		if (valueResult is None)
-		{
-			throw valueResult.info
-		}
+		Odin.eval(context, valueExpr, stack)
 		
 		var value = stack.pull()
 		while (value is Value)
@@ -720,11 +669,7 @@ data class CommandRoute(var route: Route)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		val result = Odin.eval(context, route, stack)
-		if (result is None)
-		{
-			throw result.info
-		}
+		Odin.eval(context, route, stack)
 	}
 }
 
@@ -735,15 +680,13 @@ data class CommandLoop(val expr: Route, var body: Route)
 	{
 		while (true)
 		{
-			val condition = Odin.eval(context, expr, stack)
-			if (condition is None)
+			try
 			{
-				if (condition.info is CommandStop.StopException)
-				{
-					break
-				}
-				
-				throw condition.info
+				Odin.eval(context, expr, stack)
+			}
+			catch (ex: CommandStop.StopException)
+			{
+				break
 			}
 			
 			var pass = stack.pull()
@@ -762,20 +705,19 @@ data class CommandLoop(val expr: Route, var body: Route)
 				break
 			}
 			
-			context.joinScope(Scope("loop"))
+			context.enterScope(Scope("loop"))
 			
-			val result = Odin.eval(context, body, stack)
-			
-			context.quitScope()
-			
-			if (result is None)
+			try
 			{
-				if (result.info is CommandStop.StopException)
-				{
-					break
-				}
-				
-				throw result.info
+				Odin.eval(context, body, stack)
+			}
+			catch (ex: CommandStop.StopException)
+			{
+				break
+			}
+			finally
+			{
+				context.leaveScope()
 			}
 		}
 	}
@@ -800,8 +742,6 @@ data class CommandFunctionAccess(val name: String)
 			"function $name not defined"
 		}
 		
-		context.joinScope(Scope(func.name))
-		
 		val pull = func.pull
 		val push = func.push
 		val body = func.body
@@ -815,28 +755,18 @@ data class CommandFunctionAccess(val name: String)
 		
 		funcStack = funcStack.flip()
 		
-		val result = if (body == null)
+		if (body != null)
 		{
-			null
-		}
-		else
-		{
+			context.enterScope(Scope(func.name))
+			
 			Odin.eval(context, body, funcStack)
-		}
-		
-		if (result != null && result is Some)
-		{
+			
 			for (entry in push)
 			{
 				stack.push(funcStack.pull())
 			}
-		}
-		
-		context.quitScope()
-		
-		if (result is None)
-		{
-			throw result.info
+			
+			context.leaveScope()
 		}
 	}
 }
@@ -890,21 +820,26 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		val push = func.push
 		val body = func.body
 		
+		
 		var funcStack = Stack()
 		
 		args.forEach(funcStack::push)
 		
 		funcStack = funcStack.flip()
 		
-		val result = body?.let { Odin.eval(receiver, it, funcStack) }
+		receiver.enterScope(Scope(func.name))
 		
-		if (result != null && result is Some)
+		if (body != null)
 		{
+			Odin.eval(receiver, body, funcStack)
+			
 			for (entry in push)
 			{
 				stack.push(funcStack.pull())
 			}
 		}
+		
+		receiver.leaveScope()
 	}
 	
 	private fun callFunctionJava(receiver: Any, args: List<Any>, stack: Stack)
@@ -974,7 +909,6 @@ data class CommandInstancePropertyAccess(val name: String)
 		{
 			receiver = receiver.data
 		}
-		
 		
 		if (receiver is Inst)
 		{
@@ -1114,9 +1048,8 @@ data class CommandJavaTypeDefine(val clazz: Class<*>, val size: Int)
 		{
 			val (found, match) = requireNotNull(resolve(clazz.declaredConstructors.toList(), args))
 			{
-				"could not resolve constructor of ${clazz.name}"
+				"could not resolve constructor of ${clazz.name} for args ${args.joinToString { it.javaClass.name }}"
 			}
-			
 			
 			require(found is Constructor<*>)
 			{
@@ -1179,11 +1112,21 @@ private fun resolveMatching(func: Executable, args: List<Any>): Pair<Executable,
 	{
 		val methType = meth[index]
 		
+		if (methType == Any::class.java)
+		{
+			continue
+		}
+		
 		val passData = pass[index]
 		val passType = passData.javaClass
 		
 		if (methType != passType)
 		{
+			if (methType.isAssignableFrom(passType))
+			{
+				continue
+			}
+			
 			if (passData !is Number)
 			{
 				return null
@@ -1212,33 +1155,92 @@ private fun resolveMatching(func: Executable, args: List<Any>): Pair<Executable,
 
 private fun makeInstance(name: String, stack: Stack, context: Context, body: Route?): Inst
 {
-	val type = requireNotNull(context.findType(name))
+	val clazz = requireNotNull(context.findType(name))
 	{
-		"trait or class $name undefined in context"
+		"trait or class $name undefined in context ${context.name}"
 	}
 	
-	val supes = (type.back as? Trait)?.supes ?: (type.back as Clazz).supes
-	val route = (type.back as? Trait)?.route ?: (type.back as Clazz).route
+	require(clazz.back is Clazz)
+	{
+		"only classes can be initialized, $name is a ${clazz.back::class}"
+	}
 	
-	val instance = Inst(type)
+	val supes = clazz.back.supes
+	
+	val instance = Inst(clazz)
+	
+	
+	fun definePropsFrom(sourceName: String, props: Map<String, Prop>)
+	{
+		props.forEach()
+		{ (name, newProp) ->
+			
+			val oldProp = instance.findProp(name) ?: return@forEach instance.defineProp(newProp)
+			
+			require(oldProp.type.matches(newProp.type))
+			{
+				"property $newProp in $sourceName conflicts with existing property $oldProp"
+			}
+		}
+	}
+	
+	fun defineFuncsFrom(sourceName: String, funcs: Map<String, Func>)
+	{
+		funcs.forEach()
+		{ (name, newFunc) ->
+			
+			val oldFunc = instance.findFunc(name) ?: return@forEach instance.defineFunc(newFunc)
+			
+			require(oldFunc.pull == newFunc.pull && oldFunc.push == newFunc.push)
+			{
+				"function $newFunc in $sourceName conflicts with existing function $oldFunc"
+			}
+			
+			if (oldFunc.body == null)
+			{
+				oldFunc.body = newFunc.body
+			}
+		}
+	}
+	
 	
 	supes.forEach()
-	{ superType ->
-		val superTrait = makeInstance(superType.name, stack, context, null)
+	{ superTrait ->
+		val trait = requireNotNull(context.findType(superTrait))
+		{
+			"trait $superTrait undefined in context ${context.name}"
+		}
 		
-		instance.insts[superTrait.type] = superTrait
+		require(trait.back is Trait)
+		{
+			"classes can only inherit from traits, $name is a ${trait.back::class}"
+		}
+		
+		val traitProps = trait.back.props
+		val traitFuncs = trait.back.funcs
+		
+		definePropsFrom(trait.back.name, traitProps)
+		defineFuncsFrom(trait.back.name, traitFuncs)
 	}
 	
-	body?.let { Odin.eval(instance, it, stack) }
 	
+	val classProps = clazz.back.props
+	val classFuncs = clazz.back.funcs
+	
+	definePropsFrom(clazz.back.name, classProps)
+	defineFuncsFrom(clazz.back.name, classFuncs)
+	
+	if (body != null)
+	{
+		instance.enterScope(context.scopes[0])
+		Odin.eval(instance, body, stack)
+		instance.leaveScope()
+	}
+	
+	val route = clazz.back.route
 	if (route != null)
 	{
-		val result = Odin.eval(instance, route, stack)
-		
-		if (result is None)
-		{
-			throw result.info
-		}
+		Odin.eval(instance, route, stack)
 	}
 	
 	return instance

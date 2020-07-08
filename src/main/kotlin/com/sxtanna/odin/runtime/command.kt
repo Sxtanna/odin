@@ -785,10 +785,9 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			{
 				while (data is Value)
 				{
-					data = data
+					data = data.data
 				}
 			}
-			
 			args += data
 		}
 		

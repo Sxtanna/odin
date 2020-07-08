@@ -13,7 +13,6 @@ enum class Word
 	PUSH,
 	PULL,
 	
-	REDO,
 	TYPE,
 	
 	LOOP,

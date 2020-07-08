@@ -82,14 +82,6 @@ object CommandTail : Command()
 	}
 }
 
-data class CommandRedo(val count: Int)
-	: Command()
-{
-	override fun eval(stack: Stack, context: Context)
-	{
-		stack.push(this)
-	}
-}
 
 data class CommandPropertyDefine(val prop: Prop, val depth: Int = -1)
 	: Command()

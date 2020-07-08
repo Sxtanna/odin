@@ -393,23 +393,6 @@ object Typer : (List<TokenData>) -> List<Command>
 				cmds += CommandStop
 			Word.JAVA  ->
 				parseJava(cmds)
-			Word.REDO  ->
-			{
-				val check = peek
-				require(check == null || check.type == NUM)
-				{
-					"peek must be followed by nothing or a number"
-				}
-				
-				if (check != null)
-				{
-					move(amount = 1)
-				}
-				
-				val numb = check?.data?.toIntOrNull() ?: -1
-				
-				cmds += CommandRedo(numb)
-			}
 			else       ->
 			{
 				throw UnsupportedOperationException("handling for word $word not found")

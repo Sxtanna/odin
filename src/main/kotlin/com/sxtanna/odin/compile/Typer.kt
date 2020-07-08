@@ -44,7 +44,6 @@ import com.sxtanna.odin.runtime.CommandPropertyAccess
 import com.sxtanna.odin.runtime.CommandPropertyAssign
 import com.sxtanna.odin.runtime.CommandPropertyDefine
 import com.sxtanna.odin.runtime.CommandPropertyResets
-import com.sxtanna.odin.runtime.CommandRedo
 import com.sxtanna.odin.runtime.CommandRoute
 import com.sxtanna.odin.runtime.CommandSet
 import com.sxtanna.odin.runtime.CommandStackPull
@@ -1495,6 +1494,15 @@ object Typer : (List<TokenData>) -> List<Command>
 			"class missing args, bounds, or body $peek"
 		}
 		
+		if (peek?.type == BOUND) // parse class bounds
+		{
+			move(amount = 1)
+			
+			clazz.supes += parseBound().filterIsInstance<Basic>().map(Basic::name)
+			
+			ignoreNewLines()
+		}
+		
 		if (peek?.type == PAREN_L) // parse props
 		{
 			move(amount = 1)
@@ -1546,15 +1554,6 @@ object Typer : (List<TokenData>) -> List<Command>
 				
 				ignoreNewLines()
 			}
-			
-			ignoreNewLines()
-		}
-		
-		if (peek?.type == BOUND) // parse class bounds
-		{
-			move(amount = 1)
-			
-			clazz.supes += parseBound().filterIsInstance<Basic>().map(Basic::name)
 			
 			ignoreNewLines()
 		}
@@ -2035,6 +2034,15 @@ object Typer : (List<TokenData>) -> List<Command>
 			{
 				continue
 			}
+			if (token.type == COMMA)
+			{
+				require(init.isNotEmpty())
+				{
+					"comma out of position"
+				}
+				
+				continue
+			}
 			if (token.type == BRACE_R)
 			{
 				break
@@ -2051,11 +2059,14 @@ object Typer : (List<TokenData>) -> List<Command>
 				}
 				
 				val expr = mutableListOf<Command>()
-				parseShuntedExpression(expr)
+				expr += parseExpr(breakOnComma = true)
 				
 				init += CommandRoute(Route.of(expr))
 				init += CommandPropertyAssign(name)
+				continue
 			}
+			
+			throw IllegalStateException("token out of position: $token")
 		}
 		
 		cmds += CommandClazzCreate(data.data, Route.of(init))

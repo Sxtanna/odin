@@ -1494,15 +1494,6 @@ object Typer : (List<TokenData>) -> List<Command>
 			"class missing args, bounds, or body $peek"
 		}
 		
-		if (peek?.type == BOUND) // parse class bounds
-		{
-			move(amount = 1)
-			
-			clazz.supes += parseBound().filterIsInstance<Basic>().map(Basic::name)
-			
-			ignoreNewLines()
-		}
-		
 		if (peek?.type == PAREN_L) // parse props
 		{
 			move(amount = 1)
@@ -1554,6 +1545,15 @@ object Typer : (List<TokenData>) -> List<Command>
 				
 				ignoreNewLines()
 			}
+			
+			ignoreNewLines()
+		}
+		
+		if (peek?.type == BOUND) // parse class bounds
+		{
+			move(amount = 1)
+			
+			clazz.supes += parseBound().filterIsInstance<Basic>().map(Basic::name)
 			
 			ignoreNewLines()
 		}
@@ -2032,6 +2032,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			
 			if (token.type == NEWLINE)
 			{
+				ignoreNewLines()
 				continue
 			}
 			if (token.type == COMMA)

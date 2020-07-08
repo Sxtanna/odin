@@ -4,7 +4,7 @@ Example
 -------
 ##### Keywords
 ```kotlin
-type ({Expr})      // returns the type of the result of the expression
+type({Expr})      // returns the type of the result of the expression
 
 // standard out
 push {Expr}  
@@ -34,9 +34,6 @@ else              // failing case of when
 
 loop ({Bit Expr}) // repeats a block of code
 stop              // cancels the repetition of a loop
-
-redo              // reruns the entire file
-redo {Int}        // ^ that but a certain amount of times
 ```
 
 ##### Property
@@ -91,7 +88,7 @@ when (num1 > num0) {
 
 var count0 = 0
 
-loop ((count0 = count0 + 1) < 10) {
+loop (count0++ < 10) {
     push "Count = " + count0
 }
 
@@ -101,11 +98,9 @@ loop (true)
 {
     push "Count = " + count1
 
-    when((count1 = count1 + 1) > 10)
+    when(count1++ > 10)
     {
         stop
     }
 }
-
-redo 2 // this entire thing will run 2 more times
 ```

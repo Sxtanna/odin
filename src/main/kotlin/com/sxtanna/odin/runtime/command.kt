@@ -72,7 +72,7 @@ object CommandTail : Command()
 				break
 			}
 			
-			if (value is Value)
+			while (value is Value)
 			{
 				value = value.data
 			}
@@ -386,7 +386,7 @@ data class CommandWhen(val expr: Route, val conditionPass: Route, val conditionF
 		
 		// resolve result of condition
 		var pass = stack.pull()
-		if (pass is Value)
+		while (pass is Value)
 		{
 			pass = pass.data
 		}
@@ -574,13 +574,13 @@ data class CommandGet(val indexExpr: Route)
 		}
 		
 		var index = stack.pull()
-		if (index is Value)
+		while (index is Value)
 		{
 			index = index.data
 		}
 		
 		var access = stack.pull()
-		if (access is Value)
+		while (access is Value)
 		{
 			access = access.data
 		}
@@ -647,7 +647,7 @@ data class CommandSet(val indexExpr: Route, val valueExpr: Route)
 		}
 		
 		var index = stack.pull()
-		if (index is Value)
+		while (index is Value)
 		{
 			index = index.data
 		}
@@ -659,13 +659,13 @@ data class CommandSet(val indexExpr: Route, val valueExpr: Route)
 		}
 		
 		var value = stack.pull()
-		if (value is Value)
+		while (value is Value)
 		{
 			value = value.data
 		}
 		
 		var access = stack.pull()
-		if (access is Value)
+		while (access is Value)
 		{
 			access = access.data
 		}
@@ -747,7 +747,7 @@ data class CommandLoop(val expr: Route, var body: Route)
 			}
 			
 			var pass = stack.pull()
-			if (pass is Value)
+			while (pass is Value)
 			{
 				pass = pass.data
 			}
@@ -850,7 +850,7 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 	override fun eval(stack: Stack, context: Context)
 	{
 		var receiver = stack.pull()
-		if (receiver is Value)
+		while (receiver is Value)
 		{
 			receiver = receiver.data
 		}
@@ -859,9 +859,12 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		repeat(size)
 		{
 			var data = stack.pull()
-			if (data is Value && receiver !is Inst)
+			if (receiver !is Inst)
 			{
-				data = data.data
+				while (data is Value)
+				{
+					data = data
+				}
 			}
 			
 			args += data
@@ -967,7 +970,7 @@ data class CommandInstancePropertyAccess(val name: String)
 	override fun eval(stack: Stack, context: Context)
 	{
 		var receiver = stack.pull()
-		if (receiver is Value)
+		while (receiver is Value)
 		{
 			receiver = receiver.data
 		}
@@ -1071,7 +1074,7 @@ data class CommandJavaTypeDefine(val clazz: Class<*>, val size: Int)
 		repeat(size)
 		{
 			var data = stack.pull()
-			if (data is Value)
+			while (data is Value)
 			{
 				data = data.data
 			}

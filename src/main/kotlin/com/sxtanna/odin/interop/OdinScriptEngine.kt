@@ -86,8 +86,7 @@ class OdinScriptEngine : ScriptEngine
 	override fun eval(script: String, bindings: Bindings): Any
 	{
 		var value = Odin.evaluate(Odin.assemble(script) ?: return Unit).peek() ?: return Unit
-		
-		if (value is Value)
+		while (value is Value)
 		{
 			value = value.data
 		}

@@ -91,6 +91,22 @@ open class Context(val name: String)
 	}
 	
 	
+	fun enterSuperScope(scope: Scope)
+	{
+		scopes.addLast(scope)
+	}
+	
+	fun leaveSuperScope()
+	{
+		require(scopes.size > 1)
+		{
+			"context cannot leave it's primary scope"
+		}
+		
+		scopes.removeLast()
+	}
+	
+	
 	override fun equals(other: Any?): Boolean
 	{
 		if (this === other) return true

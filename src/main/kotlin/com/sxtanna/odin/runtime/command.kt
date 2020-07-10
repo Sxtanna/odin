@@ -88,11 +88,6 @@ data class CommandPropertyDefine(val prop: Prop, val depth: Int = -1)
 {
 	override fun eval(stack: Stack, context: Context)
 	{
-		require(context.findProp(prop.name, depth) == null)
-		{
-			"property ${prop.name}|${depth} already defined in scope ${context.scopes[0].name}"
-		}
-		
 		context.defineProp(prop)
 	}
 }

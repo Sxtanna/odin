@@ -17,3 +17,16 @@ thatHash.set(1, "World")
 thisHash.set("hash", thatHash)
 
 push thisHash.get("hash")[1].joinToString("\n")
+
+val hash = Hash{}
+
+hash.hash.put(1, "Hello")
+
+push hash.joinToString("\n")
+
+val keys = hash.hash.keySet().iterator()
+
+loop (keys.hasNext())
+{
+    push keys.next()
+}

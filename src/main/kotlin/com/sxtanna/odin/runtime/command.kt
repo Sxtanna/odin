@@ -788,7 +788,9 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		
 		if (receiver is Inst)
 		{
+			receiver.enterSuperScope(context.scopes[0])
 			callFunctionInst(receiver, args, stack)
+			receiver.leaveSuperScope()
 		}
 		else
 		{

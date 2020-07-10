@@ -135,7 +135,7 @@ data class Trait(override val name: String)
 	
 	override fun toString(): String
 	{
-		return "Trait[$name]($props)$funcs"
+		return "Trait[$name]($props){$funcs}"
 	}
 }
 
@@ -176,7 +176,7 @@ data class Clazz(override val name: String)
 	
 	override fun toString(): String
 	{
-		return "Class[$name]::$supes"
+		return "Class[$name]($props)::$supes"
 	}
 	
 }

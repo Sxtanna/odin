@@ -263,33 +263,20 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseMain(cmds: MutableList<Command>)
 	{
-		val token = next
-		
-		when (token.type)
+		when (peek?.type)
 		{
 			WORD       ->
 			{
-				parseWord(cmds, token)
+				parseWord(cmds, next)
 			}
 			NAME       ->
 			{
-				parseName(cmds, token)
-			}
-			NUM        ->
-			{
-				move(amount = -1)
-				parseShuntedExpression(cmds)
-			}
-			PAREN_L    ->
-			{
-				parseShuntedExpression(cmds)
-				
-				require(peek?.type == PAREN_R)
-				
-				move(amount = 1)
+				parseName(cmds, next)
 			}
 			STACK_PUSH ->
 			{
+				move(amount = 1)
+				
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
@@ -297,11 +284,27 @@ object Typer : (List<TokenData>) -> List<Command>
 			}
 			STACK_PULL ->
 			{
+				move(amount = 1)
+				
 				cmds += CommandStackPull(true)
+			}
+			PAREN_L    ->
+			{
+				move(amount = 1)
+				
+				parseShuntedExpression(cmds)
+				
+				require(peek?.type == PAREN_R)
+				
+				move(amount = 1)
+			}
+			NUM        ->
+			{
+				parseShuntedExpression(cmds)
 			}
 			else       ->
 			{
-				throw IllegalStateException("token out of place: $token")
+				throw IllegalStateException("token out of place: $peek")
 			}
 		}
 	}
@@ -309,51 +312,40 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun PeekIterator<TokenData>.parseName(cmds: MutableList<Command>, data: TokenData)
 	{
-		var token: TokenData
-		
-		token = next
-		
-		when (token.type)
+		when (peek?.type)
 		{
 			OPER    ->
 			{
-				move(amount = -2)
+				move(amount = -1)
 				
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
 				cmds += CommandRoute(Route.of(expr))
 			}
-			PAREN_L ->
-			{
-				move(amount = -1)
-				
-				parseRef(cmds, data)
-			}
 			ASSIGN  ->
 			{
+				move(amount = 1)
+				
 				val expr = mutableListOf<Command>()
 				parseShuntedExpression(expr)
 				
 				cmds += CommandRoute(Route.of(expr))
 				cmds += CommandPropertyAssign(data.data)
 			}
-			POINT   ->
+			POINT,
+			PAREN_L ->
 			{
-				move(amount = -1)
-				
 				parseRef(cmds, data)
 			}
 			BRACK_L ->
 			{
-				move(amount = -1)
-				
 				cmds += CommandPropertyAccess(data.data)
 				parseInd(cmds)
 			}
 			else    ->
 			{
-				throw UnsupportedOperationException("token out of place: $token")
+				throw UnsupportedOperationException("token out of place: $peek")
 			}
 		}
 	}
@@ -1679,26 +1671,23 @@ object Typer : (List<TokenData>) -> List<Command>
 					else
 					{
 						parseName(expr, token)
+						
 						expr += CommandPropertyAccess(token.data)
 					}
 				}
-				POINT ->
+				POINT      ->
 				{
-					val temp = "temp${UUID.randomUUID()}"
-					
-					expr += CommandPropertyDefine(Prop(temp, false))
-					expr += CommandPropertyAssign(temp)
-					expr += CommandPropertyAccess(temp)
+					val temp = generateTempVariable(expr)
 					
 					if (peek(amount = 1)?.type == PAREN_L)
 					{
 						move(amount = -1)
-						parseFuncCall(expr, TokenData(NAME, temp), instance = true)
+						parseInstanceFuncCall(expr, TokenData(NAME, temp))
 					}
 					else
 					{
 						move(amount = -1)
-						parsePropCall(expr, TokenData(NAME, temp), instance = true)
+						parseInstancePropCall(expr, TokenData(NAME, temp))
 					}
 				}
 				TYPE       ->
@@ -1989,23 +1978,32 @@ object Typer : (List<TokenData>) -> List<Command>
 		{
 			PAREN_L -> // function call
 			{
-				parseFuncCall(cmds, token, instance = false)
+				parseFuncCall(cmds, token)
 			}
 			POINT   -> // instance call
 			{
-				if (peek(amount = 2)?.type == PAREN_L)
+				var target = token
+				
+				while (peek?.type == POINT)
 				{
-					parseFuncCall(cmds, token, instance = true)
-				}
-				else
-				{
-					parsePropCall(cmds, token, instance = true)
+					if (peek(amount = 2)?.type == PAREN_L)
+					{
+						parseInstanceFuncCall(cmds, target)
+					}
+					else
+					{
+						parseInstancePropCall(cmds, target)
+					}
+					
+					if (peek?.type == POINT)
+					{
+						target = TokenData(NAME, generateTempVariable(cmds))
+					}
 				}
 			}
 			else    ->
 			{
-				parsePropCall(cmds, token, instance = false)
-				
+				parsePropCall(cmds, token)
 			}
 		}
 	}
@@ -2160,62 +2158,57 @@ object Typer : (List<TokenData>) -> List<Command>
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parseFuncCall(cmds: MutableList<Command>, data: TokenData, instance: Boolean = false)
+	private fun PeekIterator<TokenData>.parseFuncCall(cmds: MutableList<Command>, data: TokenData)
 	{
-		if (!instance)
-		{
-			val params = parseTup(funcParams = true)
-			
-			params.forEach()
-			{ expr ->
-				cmds += CommandRoute(Route.of(expr))
-			}
-			
-			cmds += CommandFunctionAccess(data.data)
-		}
-		else
-		{
-			var token: TokenData
-			
-			token = next
-			require(token.type == POINT)
-			{
-				"instance function call must be with a point"
-			}
-			
-			token = next
-			require(token.type == WORD || token.type == NAME || token.type == TYPE)
-			{
-				"instance function call must be one of [WORD, NAME, TYPE]"
-			}
-			
-			val funcName = token.data
-			
-			val params = parseTup(funcParams = true)
-			
-			params.forEach()
-			{ expr ->
-				cmds += CommandRoute(Route.of(expr))
-			}
-			
-			if (data.type != POINT)
-			{
-				cmds += CommandPropertyAccess(data.data)
-			}
-			cmds += CommandInstanceFunctionAccess(funcName, params.size)
+		val params = parseTup(funcParams = true)
+		
+		params.forEach()
+		{ expr ->
+			cmds += CommandRoute(Route.of(expr))
 		}
 		
-		
+		cmds += CommandFunctionAccess(data.data)
 	}
 	
-	private fun PeekIterator<TokenData>.parsePropCall(cmds: MutableList<Command>, data: TokenData, instance: Boolean = false)
+	private fun PeekIterator<TokenData>.parseInstanceFuncCall(cmds: MutableList<Command>, data: TokenData)
 	{
-		if (!instance)
+		var token: TokenData
+		
+		token = next
+		require(token.type == POINT)
 		{
-			cmds += CommandPropertyAccess(data.data)
-			return
+			"instance function call must be with a point"
 		}
 		
+		token = next
+		require(token.type == WORD || token.type == NAME || token.type == TYPE)
+		{
+			"instance function call must be one of [WORD, NAME, TYPE]"
+		}
+		
+		val funcName = token.data
+		
+		val params = parseTup(funcParams = true)
+		
+		params.forEach()
+		{ expr ->
+			cmds += CommandRoute(Route.of(expr))
+		}
+		
+		if (data.type != POINT)
+		{
+			cmds += CommandPropertyAccess(data.data)
+		}
+		cmds += CommandInstanceFunctionAccess(funcName, params.size)
+	}
+	
+	private fun PeekIterator<TokenData>.parsePropCall(cmds: MutableList<Command>, data: TokenData)
+	{
+		cmds += CommandPropertyAccess(data.data)
+	}
+	
+	private fun PeekIterator<TokenData>.parseInstancePropCall(cmds: MutableList<Command>, data: TokenData)
+	{
 		var token: TokenData
 		
 		token = next
@@ -2232,9 +2225,13 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		val propName = token.data
 		
-		cmds += CommandPropertyAccess(data.data)
+		if (data.type != POINT)
+		{
+			cmds += CommandPropertyAccess(data.data)
+		}
 		cmds += CommandInstancePropertyAccess(propName)
 	}
+	
 	
 	private fun resolveValue(token: TokenData): Pair<String, Any>
 	{
@@ -2289,7 +2286,6 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		return type to data
 	}
-	
 	
 	private fun shuntingYard(cmds: List<Command>): List<Command>
 	{
@@ -2355,6 +2351,17 @@ object Typer : (List<TokenData>) -> List<Command>
 		{
 			temp += deck.pop()
 		}
+		
+		return temp
+	}
+	
+	private fun generateTempVariable(cmds: MutableList<Command>): String
+	{
+		val temp = "temp${UUID.randomUUID()}"
+		
+		cmds += CommandPropertyDefine(Prop(temp, mutable = false))
+		cmds += CommandPropertyAssign(temp)
+		cmds += CommandPropertyAccess(temp)
 		
 		return temp
 	}

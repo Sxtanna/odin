@@ -2369,13 +2369,8 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.ignoreNewLines()
 	{
-		while (!empty)
+		while (peek?.type == NEWLINE)
 		{
-			if (peek?.type != NEWLINE)
-			{
-				break
-			}
-			
 			move(amount = 1)
 		}
 	}

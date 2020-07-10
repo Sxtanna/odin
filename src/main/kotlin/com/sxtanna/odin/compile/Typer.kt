@@ -261,7 +261,7 @@ object Typer : (List<TokenData>) -> List<Command>
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parseMain(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseMain(cmds: CommandChain)
 	{
 		when (peek?.type)
 		{
@@ -310,7 +310,7 @@ object Typer : (List<TokenData>) -> List<Command>
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parseName(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parseName(cmds: CommandChain, data: TokenData)
 	{
 		when (peek?.type)
 		{
@@ -350,7 +350,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 	}
 	
-	private fun PeekIterator<TokenData>.parseWord(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parseWord(cmds: CommandChain, data: TokenData)
 	{
 		val word = requireNotNull(Word.find(data.data))
 		{
@@ -392,7 +392,7 @@ object Typer : (List<TokenData>) -> List<Command>
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parseProp(cmds: MutableList<Command>, mutable: Boolean): Prop
+	private fun IterOfTokens.parseProp(cmds: CommandChain, mutable: Boolean): Prop
 	{
 		var token: TokenData
 		
@@ -424,7 +424,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		return prop
 	}
 	
-	private fun PeekIterator<TokenData>.parseFunc(cmds: MutableList<Command>): Func
+	private fun IterOfTokens.parseFunc(cmds: CommandChain): Func
 	{
 		var token: TokenData
 		
@@ -584,13 +584,13 @@ object Typer : (List<TokenData>) -> List<Command>
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parsePush(cmds: MutableList<Command>, returnToStack: Boolean = false)
+	private fun IterOfTokens.parsePush(cmds: CommandChain, returnToStack: Boolean = false)
 	{
 		parseShuntedExpression(cmds)
 		cmds += CommandConsolePush(true, returnToStack)
 	}
 	
-	private fun PeekIterator<TokenData>.parsePull(cmds: MutableList<Command>)
+	private fun IterOfTokens.parsePull(cmds: CommandChain)
 	{
 		var type = Types.none()
 		var text = null as? String?
@@ -634,7 +634,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandConsolePull(type, text)
 	}
 	
-	private fun PeekIterator<TokenData>.parseCast(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseCast(cmds: CommandChain)
 	{
 		require(next.type == BOUND)
 		{
@@ -662,7 +662,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandCast(Route.of(expr), type)
 	}
 	
-	private fun PeekIterator<TokenData>.parseWhen(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseWhen(cmds: CommandChain)
 	{
 		var token: TokenData
 		
@@ -769,7 +769,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandWhen(Route.of(expr), Route.of(pass), Route.of(fail))
 	}
 	
-	private fun PeekIterator<TokenData>.parseCase(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseCase(cmds: CommandChain)
 	{
 		var token: TokenData
 		
@@ -853,7 +853,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandCase(Route.of(expr), cases)
 	}
 	
-	private fun PeekIterator<TokenData>.parseLoop(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseLoop(cmds: CommandChain)
 	{
 		var token: TokenData
 		
@@ -912,7 +912,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandLoop(Route.of(expr), Route.of(body))
 	}
 	
-	private fun PeekIterator<TokenData>.parseJava(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseJava(cmds: CommandChain)
 	{
 		var token: TokenData
 		
@@ -959,7 +959,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandJavaTypeDefine(Class.forName(name), constructorParams)
 	}
 	
-	private fun PeekIterator<TokenData>.parseBound(): List<Types>
+	private fun IterOfTokens.parseBound(): List<Types>
 	{
 		require(peek?.type == BRACK_L)
 		{
@@ -1008,7 +1008,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		return types
 	}
 	
-	private fun PeekIterator<TokenData>.parseTrait(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseTrait(cmds: CommandChain)
 	{
 		require(peek?.type == TYPE)
 		{
@@ -1302,7 +1302,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 	}
 	
-	private fun PeekIterator<TokenData>.parseClazz(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseClazz(cmds: CommandChain)
 	{
 		require(peek?.type == TYPE)
 		{
@@ -1615,14 +1615,14 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 	}
 	
-	private fun PeekIterator<TokenData>.parseShuntedExpression(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseShuntedExpression(cmds: CommandChain)
 	{
 		val expr = parseExpr()
 		
 		cmds += shuntingYard(expr)
 	}
 	
-	private fun PeekIterator<TokenData>.parseExpr(breakOnComma: Boolean = false, breakOnBraceL: Boolean = false): List<Command>
+	private fun IterOfTokens.parseExpr(breakOnComma: Boolean = false, breakOnBraceL: Boolean = false): List<Command>
 	{
 		val expr = mutableListOf<Command>()
 		
@@ -1817,7 +1817,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		return expr
 	}
 	
-	private fun PeekIterator<TokenData>.parseType(): Types
+	private fun IterOfTokens.parseType(): Types
 	{
 		var tuple = false
 		
@@ -1943,7 +1943,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 	}
 	
-	private fun PeekIterator<TokenData>.parseTypeQuery(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseTypeQuery(cmds: CommandChain)
 	{
 		var token: TokenData
 		
@@ -1965,14 +1965,14 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandTypeQuery(Route.of(expr))
 	}
 	
-	private fun PeekIterator<TokenData>.parseLit(cmds: MutableList<Command>, token: TokenData)
+	private fun IterOfTokens.parseLit(cmds: CommandChain, token: TokenData)
 	{
 		val value = resolveValue(token)
 		
 		cmds += CommandLiteral(value.first, value.second)
 	}
 	
-	private fun PeekIterator<TokenData>.parseRef(cmds: MutableList<Command>, token: TokenData)
+	private fun IterOfTokens.parseRef(cmds: CommandChain, token: TokenData)
 	{
 		when (peek?.type)
 		{
@@ -2008,7 +2008,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 	}
 	
-	private fun PeekIterator<TokenData>.parseNew(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parseNew(cmds: CommandChain, data: TokenData)
 	{
 		ignoreNewLines()
 		
@@ -2071,7 +2071,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandClazzCreate(data.data, Route.of(init))
 	}
 	
-	private fun PeekIterator<TokenData>.parseTup(funcParams: Boolean = false): List<List<Command>>
+	private fun IterOfTokens.parseTup(funcParams: Boolean = false): List<List<Command>>
 	{
 		val cmds = mutableListOf<List<Command>>()
 		
@@ -2123,7 +2123,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		return cmds.reversed()
 	}
 	
-	private fun PeekIterator<TokenData>.parseInd(cmds: MutableList<Command>)
+	private fun IterOfTokens.parseInd(cmds: CommandChain)
 	{
 		var token: TokenData
 		
@@ -2158,7 +2158,7 @@ object Typer : (List<TokenData>) -> List<Command>
 	}
 	
 	
-	private fun PeekIterator<TokenData>.parseFuncCall(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parseFuncCall(cmds: CommandChain, data: TokenData)
 	{
 		val params = parseTup(funcParams = true)
 		
@@ -2170,7 +2170,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandFunctionAccess(data.data)
 	}
 	
-	private fun PeekIterator<TokenData>.parseInstanceFuncCall(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parseInstanceFuncCall(cmds: CommandChain, data: TokenData)
 	{
 		var token: TokenData
 		
@@ -2202,12 +2202,12 @@ object Typer : (List<TokenData>) -> List<Command>
 		cmds += CommandInstanceFunctionAccess(funcName, params.size)
 	}
 	
-	private fun PeekIterator<TokenData>.parsePropCall(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parsePropCall(cmds: CommandChain, data: TokenData)
 	{
 		cmds += CommandPropertyAccess(data.data)
 	}
 	
-	private fun PeekIterator<TokenData>.parseInstancePropCall(cmds: MutableList<Command>, data: TokenData)
+	private fun IterOfTokens.parseInstancePropCall(cmds: CommandChain, data: TokenData)
 	{
 		var token: TokenData
 		
@@ -2355,7 +2355,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		return temp
 	}
 	
-	private fun generateTempVariable(cmds: MutableList<Command>): String
+	private fun generateTempVariable(cmds: CommandChain): String
 	{
 		val temp = "temp${UUID.randomUUID()}"
 		
@@ -2366,7 +2366,8 @@ object Typer : (List<TokenData>) -> List<Command>
 		return temp
 	}
 	
-	private fun PeekIterator<TokenData>.ignoreNewLines()
+	
+	private fun IterOfTokens.ignoreNewLines()
 	{
 		while (!empty)
 		{

@@ -394,15 +394,12 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseProp(cmds: CommandChain, mutable: Boolean): Prop
 	{
-		var token: TokenData
-		
-		token = next
-		require(token.type == NAME)
+		require(peek?.type == NAME)
 		{
-			"property missing name"
+			"property missing name $peek"
 		}
 		
-		val prop = Prop(token.data, mutable)
+		val prop = Prop(next.data, mutable)
 		cmds += CommandPropertyDefine(prop)
 		
 		if (peek?.type == TYPED)
@@ -411,11 +408,12 @@ object Typer : (List<TokenData>) -> List<Command>
 			prop.type = parseType()
 		}
 		
-		token = next
-		require(token.type == ASSIGN)
+		require(peek?.type == ASSIGN)
 		{
-			"must be assignment: $token"
+			"must be assignment: $peek"
 		}
+		
+		move(amount = 1)
 		
 		parseShuntedExpression(cmds)
 		
@@ -426,64 +424,59 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseFunc(cmds: CommandChain): Func
 	{
-		var token: TokenData
-		
-		token = next
-		require(token.type == NAME)
+		require(peek?.type == NAME)
 		{
-			"function missing name"
+			"function missing name $peek"
 		}
 		
-		val func = Func(token.data)
+		val func = Func(next.data)
 		
 		if (peek?.type == PAREN_L)
 		{
-			token = next
-			require(token.type == PAREN_L)
-			{
-				"function parameters must be surrounded in parentheses"
-			}
+			move(amount = 1)
 			
 			val names = mutableSetOf<String>()
 			
 			while (!empty)
 			{
-				token = next
-				
-				if (token.type == PAREN_R)
+				if (peek?.type == PAREN_R)
 				{
 					require(func.pull.isNotEmpty())
 					{
 						"function parentheses must contain parameters"
 					}
 					
-					move(amount = -1)
-					
 					break
 				}
 				
-				if (token.type == COMMA)
+				if (peek?.type == COMMA)
 				{
 					require(names.isNotEmpty() || func.pull.isNotEmpty())
 					{
 						"first value must be a parameter"
 					}
 					
+					move(amount = 1)
+					
 					continue
 				}
 				
-				if (token.type == NAME)
+				if (peek?.type == NAME)
 				{
-					require(names.add(token.data))
+					val name = next.data
+					
+					require(names.add(name))
 					{
-						"parameter ${token.data} already defined for function ${func.name}"
+						"parameter $name already defined for function ${func.name}"
 					}
 					
 					continue
 				}
 				
-				if (token.type == TYPED)
+				if (peek?.type == TYPED)
 				{
+					move(amount = 1)
+					
 					val type = parseType()
 					
 					for (name in names)
@@ -495,34 +488,37 @@ object Typer : (List<TokenData>) -> List<Command>
 					continue
 				}
 				
-				throw UnsupportedOperationException("Token out of place: $token")
+				throw UnsupportedOperationException("Token out of place: $peek")
 			}
 			
-			token = next
-			require(token.type == PAREN_R)
+			require(peek?.type == PAREN_R)
 			{
 				"function parameters must be surrounded in parentheses"
 			}
+			
+			move(amount = 1)
 		}
 		
 		if (peek?.type == TYPED)
 		{
-			token = next
-			require(token.type == TYPED)
+			require(peek?.type == TYPED)
 			{
 				"function return type must be specified with typed symbol"
 			}
+			
+			move(amount = 1)
 			
 			func.push["ret0"] = parseType()
 		}
 		
 		ignoreNewLines()
 		
-		token = next
-		require(token.type == BRACE_L)
+		require(peek?.type == BRACE_L)
 		{
-			"function body must be surrounded with braces : $token"
+			"function body must be surrounded with braces : $peek"
 		}
+		
+		move(amount = 1)
 		
 		ignoreNewLines()
 		
@@ -541,7 +537,7 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		while (!empty)
 		{
-			token = peek ?: break
+			val token = peek ?: break
 			
 			if (token.type == BRACE_R)
 			{
@@ -549,7 +545,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			}
 			if (token.type == NEWLINE)
 			{
-				move(amount = 1)
+				ignoreNewLines()
 				continue
 			}
 			if (token.type == RETURN)
@@ -565,11 +561,12 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		ignoreNewLines()
 		
-		token = next
-		require(token.type == BRACE_R)
+		require(peek?.type == BRACE_R)
 		{
 			"function body must be surrounded with braces"
 		}
+		
+		move(amount = 1)
 		
 		func.pull.forEach()
 		{ (name, _) ->
@@ -2075,29 +2072,28 @@ object Typer : (List<TokenData>) -> List<Command>
 	{
 		val cmds = mutableListOf<List<Command>>()
 		
-		var token: TokenData
-		
-		token = next
-		require(token.type == PAREN_L)
+		require(peek?.type == PAREN_L)
 		{
 			"tuple must start with paren l"
 		}
 		
+		move(amount = 1)
+		
 		while (!empty)
 		{
-			token = next
-			
-			if (token.type == COMMA)
+			if (peek?.type == COMMA)
 			{
 				require(cmds.isNotEmpty())
 				{
 					"first value required before comma"
 				}
 				
+				move(amount = 1)
+				
 				continue
 			}
 			
-			if (token.type == PAREN_R)
+			if (peek?.type == PAREN_R)
 			{
 				require(funcParams || cmds.isNotEmpty())
 				{
@@ -2106,41 +2102,47 @@ object Typer : (List<TokenData>) -> List<Command>
 				
 				break
 			}
-			if (token.type == PAREN_L)
+			
+			if (peek?.type == PAREN_L)
 			{
-				move(amount = -1)
+				val nested = parseTup()
 				
-				val nest = parseTup()
-				cmds += nest.flatten() + CommandTuple(nest.size)
+				cmds += nested.flatten() + CommandTuple(nested.size)
 				
 				continue
 			}
 			
-			move(amount = -1)
 			cmds += shuntingYard(parseExpr(breakOnComma = true))
 		}
+		
+		require(peek?.type == PAREN_R)
+		{
+			"tuple must end with paren r"
+		}
+		
+		move(amount = 1)
 		
 		return cmds.reversed()
 	}
 	
 	private fun IterOfTokens.parseInd(cmds: CommandChain)
 	{
-		var token: TokenData
-		
-		token = next
-		require(token.type == BRACK_L)
+		require(peek?.type == BRACK_L)
 		{
-			"index access requires brack l"
+			"index access requires brack l $peek"
 		}
+		
+		move(amount = 1)
 		
 		val index = mutableListOf<Command>()
 		parseShuntedExpression(index)
 		
-		token = next
-		require(token.type == BRACK_R)
+		require(peek?.type == BRACK_R)
 		{
-			"index access requires brack r"
+			"index access requires brack r $peek"
 		}
+		
+		move(amount = 1)
 		
 		if (peek?.type != ASSIGN)
 		{
@@ -2149,7 +2151,6 @@ object Typer : (List<TokenData>) -> List<Command>
 		}
 		
 		move(amount = 1)
-		
 		
 		val value = mutableListOf<Command>()
 		parseShuntedExpression(value)
@@ -2160,9 +2161,7 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseFuncCall(cmds: CommandChain, data: TokenData)
 	{
-		val params = parseTup(funcParams = true)
-		
-		params.forEach()
+		parseTup(funcParams = true).forEach()
 		{ expr ->
 			cmds += CommandRoute(Route.of(expr))
 		}
@@ -2172,34 +2171,29 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseInstanceFuncCall(cmds: CommandChain, data: TokenData)
 	{
-		var token: TokenData
-		
-		token = next
-		require(token.type == POINT)
+		require(peek?.type == POINT)
 		{
-			"instance function call must be with a point"
+			"instance function call must be with a point $peek"
 		}
 		
-		token = next
-		require(token.type == WORD || token.type == NAME || token.type == TYPE)
+		move(amount = 1)
+		
+		require(peek?.type == WORD || peek?.type == NAME || peek?.type == TYPE)
 		{
-			"instance function call must be one of [WORD, NAME, TYPE]"
+			"instance function call must be one of [WORD, NAME, TYPE] $peek"
 		}
 		
-		val funcName = token.data
+		val name = next.data
 		
-		val params = parseTup(funcParams = true)
+		val args = parseTup(funcParams = true)
 		
-		params.forEach()
+		args.forEach()
 		{ expr ->
 			cmds += CommandRoute(Route.of(expr))
 		}
 		
-		if (data.type != POINT)
-		{
-			cmds += CommandPropertyAccess(data.data)
-		}
-		cmds += CommandInstanceFunctionAccess(funcName, params.size)
+		cmds += CommandPropertyAccess(data.data)
+		cmds += CommandInstanceFunctionAccess(name, args.size)
 	}
 	
 	private fun IterOfTokens.parsePropCall(cmds: CommandChain, data: TokenData)
@@ -2209,27 +2203,20 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseInstancePropCall(cmds: CommandChain, data: TokenData)
 	{
-		var token: TokenData
-		
-		token = next
-		require(token.type == POINT)
+		require(peek?.type == POINT)
 		{
-			"instance property call must be with a point"
+			"instance property call must be with a point $peek"
 		}
 		
-		token = next
-		require(token.type == WORD || token.type == NAME || token.type == TYPE)
+		move(amount = 1)
+		
+		require(peek?.type == WORD || peek?.type == NAME || peek?.type == TYPE)
 		{
-			"instance property call must be one of [WORD, NAME, TYPE]"
+			"instance property call must be one of [WORD, NAME, TYPE] $peek"
 		}
 		
-		val propName = token.data
-		
-		if (data.type != POINT)
-		{
-			cmds += CommandPropertyAccess(data.data)
-		}
-		cmds += CommandInstancePropertyAccess(propName)
+		cmds += CommandPropertyAccess(data.data)
+		cmds += CommandInstancePropertyAccess(next.data)
 	}
 	
 	

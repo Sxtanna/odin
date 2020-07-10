@@ -27,6 +27,32 @@ class BytArray::[Sized, Array]
     }
 }
 
+
+class List
+{
+    val list = java::["java.util.ArrayList"]
+
+    fun add(value: All): Bit
+    {
+        => list.add(value)
+    }
+
+    fun get(index: Int): All
+    {
+        => list[index]
+    }
+
+    fun set(index: Int, value: All)
+    {
+        list[index] = value
+    }
+
+    fun addAll(values: All)
+    {
+        list.addAll(values)
+    }
+}
+
 class Hash
 {
     val hash = java::["java.util.HashMap"]
@@ -57,14 +83,22 @@ class Hash
         => hash.size()
     }
 
-    fun indexList: All
+    fun indexList: List
     {
-        => java::["java.util.ArrayList"](hash.keySet())
+        val list = List{}
+
+        list.addAll(hash.keySet())
+
+        => list
     }
 
-    fun valueList: All
+    fun valueList: List
     {
-        => java::["java.util.ArrayList"](hash.values())
+        val list = List{}
+
+        list.addAll(hash.values())
+
+        => list
     }
 
     fun joinToString(separator: Txt): Txt
@@ -80,7 +114,7 @@ class Hash
         var index = -1
         loop (index++ < size)
         {
-            text += "   ${indexList[index]}: ${valueList[index]}"
+            text += "   ${indexList.get(index)}: ${valueList.get(index)}"
 
             when (index < size - 1)
             {

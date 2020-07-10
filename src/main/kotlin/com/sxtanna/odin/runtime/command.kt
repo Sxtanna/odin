@@ -849,9 +849,9 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 		}
 		else
 		{
-			val (found, match) = requireNotNull(resolve(receiver.javaClass.declaredMethods.filter { it.name == name }, args))
+			val (found, match) = requireNotNull(resolve(retrieveAllFuncs(receiver.javaClass).filter { it.name == name }, args))
 			{
-				"could not resolve method $name"
+				"could not resolve method $name in ${receiver::class}"
 			}
 			
 			require(found is Method)
@@ -860,9 +860,9 @@ data class CommandInstanceFunctionAccess(val name: String, val size: Int)
 			}
 			
 			target = found
-			params = match
-			
 			target.isAccessible = true
+			
+			params = match
 			
 			this.method = target
 		}
@@ -950,12 +950,15 @@ data class CommandInstancePropertyAccess(val name: String)
 		}
 		else
 		{
-			val found = receiver.javaClass.getDeclaredField(name)
-			found.isAccessible = true
-			
-			this.field = found
+			val found = requireNotNull(retrieveAllProps(receiver.javaClass).find { it.name == name })
+			{
+				"could not resolve field $name in ${receiver::class}"
+			}
 			
 			target = found
+			target.isAccessible = true
+			
+			this.field = found
 		}
 		
 		val result = target.get(receiver)
@@ -1141,6 +1144,36 @@ private fun resolveMatching(func: Executable, args: List<Any>): Pair<Executable,
 	}
 	
 	return func to pass
+}
+
+private fun retrieveAllProps(clazz: Class<*>): Set<Field>
+{
+	val found = mutableSetOf<Field>()
+	
+	var clazz: Class<*>? = clazz
+	while (clazz != null)
+	{
+		found += clazz.declaredFields
+		
+		clazz = clazz.superclass
+	}
+	
+	return found
+}
+
+private fun retrieveAllFuncs(clazz: Class<*>): Set<Method>
+{
+	val found = mutableSetOf<Method>()
+	
+	var clazz: Class<*>? = clazz
+	while (clazz != null)
+	{
+		found += clazz.declaredMethods
+		
+		clazz = clazz.superclass
+	}
+	
+	return found
 }
 
 

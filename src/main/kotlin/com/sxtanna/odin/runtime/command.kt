@@ -726,7 +726,7 @@ data class CommandFunctionAccess(val name: String)
 	{
 		val func = requireNotNull(context.findFunc(name))
 		{
-			"function $name not defined"
+			"function $name not defined in ${context.scopes.map { it.name }}"
 		}
 		
 		val pull = func.pull

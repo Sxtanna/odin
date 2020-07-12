@@ -7,10 +7,7 @@ trait Array
     fun set(index: Int, value: All)
 }
 
-trait Collection
-{
-    fun add(value: All): Bit
-}
+class Range(val min: Int, val max: Int)
 
 class BytArray::[Sized, Array]
 {
@@ -27,6 +24,31 @@ class BytArray::[Sized, Array]
     }
 }
 
+class Iter(val list: List) {
+    var index = 0
+
+    fun hasPrev: Bit {
+        => index != 0
+    }
+
+    fun hasNext: Bit {
+        => index < list.size()
+    }
+
+    fun getPrev: All {
+        val value = list.get(index)
+        index--
+
+        => value
+    }
+
+    fun getNext: All {
+        val value = list.get(index)
+        index++
+
+        => value
+    }
+}
 
 class List
 {
@@ -51,6 +73,17 @@ class List
     {
         list.addAll(values)
     }
+
+    fun size: Int
+    {
+        => list.size()
+    }
+
+    fun indices: Range
+    {
+        => Range{ min: 0, max: size() }
+    }
+
 }
 
 class Hash

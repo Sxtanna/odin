@@ -121,13 +121,13 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		expanders += Expander(
 			skipCount = 1,
-			intoToken = { listOf(TokenData(PAREN_L, "("), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "+"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
+			intoToken = { listOf(TokenData(PAREN_L, "_"), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "+"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
 			hereMatch = { it.type == NAME },
 			nextMatch = { it.type == OPER && it.data == "++" })
 		
 		expanders += Expander(
 			skipCount = 1,
-			intoToken = { listOf(TokenData(PAREN_L, "("), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "-"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
+			intoToken = { listOf(TokenData(PAREN_L, "_"), TokenData(it.type, it.data), TokenData(ASSIGN, "="), TokenData(it.type, it.data), TokenData(OPER, "-"), TokenData(NUM, "1"), TokenData(PAREN_R, ")")) },
 			hereMatch = { it.type == NAME },
 			nextMatch = { it.type == OPER && it.data == "--" })
 	}
@@ -2105,9 +2105,19 @@ object Typer : (List<TokenData>) -> List<Command>
 			
 			if (peek?.type == PAREN_L)
 			{
+				val marker = peek
 				val nested = parseTup()
 				
-				cmds += nested.flatten() + CommandTuple(nested.size)
+				val values = nested.flatten()
+				
+				cmds += if (marker?.data == "_")
+				{
+					values
+				}
+				else
+				{
+					values + CommandTuple(nested.size)
+				}
 				
 				continue
 			}

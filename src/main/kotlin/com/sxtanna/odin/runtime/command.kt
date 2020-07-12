@@ -1253,9 +1253,17 @@ private fun makeInstance(name: String, stack: Stack, context: Context, body: Rou
 	
 	if (body != null)
 	{
-		instance.enterScope(context.scopes[0])
+		val scopes = context.scopes
+		
+		scopes.forEach()
+		{
+			instance.enterScope(it)
+		}
 		Odin.eval(instance, body, stack)
-		instance.leaveScope()
+		scopes.forEach()
+		{
+			instance.leaveScope()
+		}
 	}
 	
 	val route = clazz.back.route

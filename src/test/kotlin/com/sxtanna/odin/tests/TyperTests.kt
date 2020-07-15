@@ -10,6 +10,7 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isSameAs
 import assertk.assertions.isSuccess
+import assertk.assertions.isTrue
 import assertk.assertions.key
 import assertk.assertions.prop
 import assertk.assertions.size
@@ -42,13 +43,19 @@ object TyperTests
 		return assertThat { Typer(Lexer(text)) }.isSuccess()
 	}
 	
+	
 	@Test
 	internal fun `test property without type`()
 	{
 		val data = 10
 		val name = "number"
 		
-		assertTypesSuccessfully("val $name = $data").all()
+		val code =
+			"""
+				val $name = $data
+			""".trimIndent()
+		
+		assertTypesSuccessfully(code).all()
 		{
 			size().isEqualTo(3)
 			
@@ -71,11 +78,52 @@ object TyperTests
 		}
 	}
 	
+	@Test
+	internal fun `test property with type`()
+	{
+		val data = 'A'
+		val type = Type.LET
+		val name = "number"
+		
+		val code =
+			"""
+				var $name: ${type.name}	= '$data'
+			""".trimIndent()
+		
+		assertTypesSuccessfully(code).all()
+		{
+			size().isEqualTo(3)
+			
+			index(0).isInstanceOf(CommandPropertyDefine::class).prop("prop") { it.prop }.all()
+			{
+				prop("mutable") { it.mutable }.isTrue()
+				
+				prop("name") { it.name }.isEqualTo(name)
+				
+				prop("type") { it.type }.isEqualTo(type.back)
+			}
+			
+			index(1).isInstanceOf(CommandLiteral::class).all()
+			{
+				prop("type") { it.type }.isEqualTo("Let")
+				prop("data") { it.data }.isEqualTo(data)
+			}
+			
+			index(2).isInstanceOf(CommandPropertyAssign::class).prop("name") { it.name }.isEqualTo(name)
+		}
+	}
 	
 	@Test
 	internal fun `test function with repeated type arguments`()
 	{
-		assertTypesSuccessfully("fun add(arg0, arg1: Int): Int { => arg0 + arg1 }").all()
+		val code =
+			"""
+				fun add(arg0, arg1: Int): Int {
+					=> arg0 + arg1
+				}
+			""".trimIndent()
+		
+		assertTypesSuccessfully(code).all()
 		{
 			size().isEqualTo(1)
 			

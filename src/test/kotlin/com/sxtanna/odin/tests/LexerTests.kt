@@ -228,4 +228,121 @@ object LexerTests
 			}
 		}
 	}
+	
+	@Test
+	internal fun `test symbols collapse`()
+	{
+		assertLexesSuccessfully("<| |> value++ value-- += -= *= /= == != >= <= && || :: =>").all()
+		{
+			size().isEqualTo(18)
+			
+			index(0).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.STACK_PULL)
+				prop("data") { it.data }.isEqualTo("<|")
+			}
+			
+			index(1).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.STACK_PUSH)
+				prop("data") { it.data }.isEqualTo("|>")
+			}
+			
+			index(2).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.NAME)
+				prop("data") { it.data }.isEqualTo("value")
+			}
+			
+			index(3).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("++")
+			}
+			
+			index(4).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.NAME)
+				prop("data") { it.data }.isEqualTo("value")
+			}
+			
+			index(5).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("--")
+			}
+			
+			index(6).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("+=")
+			}
+			
+			index(7).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("-=")
+			}
+			
+			index(8).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("*=")
+			}
+			
+			index(9).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("/=")
+			}
+			
+			index(10).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("==")
+			}
+			
+			index(11).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("!=")
+			}
+			
+			index(12).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo(">=")
+			}
+			
+			index(13).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("<=")
+			}
+			
+			index(14).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("&&")
+			}
+			
+			index(15).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.OPER)
+				prop("data") { it.data }.isEqualTo("||")
+			}
+			
+			index(16).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.BOUND)
+				prop("data") { it.data }.isEqualTo("::")
+			}
+			
+			index(17).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.RETURN)
+				prop("data") { it.data }.isEqualTo("=>")
+			}
+		}
+	}
 }

@@ -25,74 +25,27 @@ object LexerTests
 		return assertThat { Lexer(text) }.isSuccess()
 	}
 	
+	
 	@Test
 	internal fun `test lexer num int`()
 	{
-		assertLexesSuccessfully("24").all()
+		assertLexesSuccessfully("24 -26 +34").all()
 		{
-			size().isEqualTo(1)
+			size().isEqualTo(3)
 			
 			index(0).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("24")
 			}
-		}
-	}
-	
-	@Test
-	internal fun `test lexer num dec`()
-	{
-		assertLexesSuccessfully("21.5").all()
-		{
-			size().isEqualTo(1)
 			
-			index(0).all()
-			{
-				prop("type") { it.type }.isEqualTo(TokenType.NUM)
-				prop("data") { it.data }.isEqualTo("21.5")
-			}
-		}
-	}
-	
-	@Test
-	internal fun `test lexer num int negative`()
-	{
-		assertLexesSuccessfully("-26").all()
-		{
-			size().isEqualTo(1)
-			
-			index(0).all()
+			index(1).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("-26")
 			}
-		}
-	}
-	
-	@Test
-	internal fun `test lexer num dec negative`()
-	{
-		assertLexesSuccessfully("-27.2").all()
-		{
-			size().isEqualTo(1)
 			
-			index(0).all()
-			{
-				prop("type") { it.type }.isEqualTo(TokenType.NUM)
-				prop("data") { it.data }.isEqualTo("-27.2")
-			}
-		}
-	}
-	
-	@Test
-	internal fun `test lexer num int positive`()
-	{
-		assertLexesSuccessfully("+34").all()
-		{
-			size().isEqualTo(1)
-			
-			index(0).all()
+			index(2).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("+34")
@@ -101,13 +54,25 @@ object LexerTests
 	}
 	
 	@Test
-	internal fun `test lexer num dec positive`()
+	internal fun `test lexer num dec`()
 	{
-		assertLexesSuccessfully("+36.55").all()
+		assertLexesSuccessfully("21.5 -27.2 +36.55").all()
 		{
-			size().isEqualTo(1)
+			size().isEqualTo(3)
 			
 			index(0).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("21.5")
+			}
+			
+			index(1).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("-27.2")
+			}
+			
+			index(2).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("+36.55")
@@ -118,41 +83,23 @@ object LexerTests
 	@Test
 	internal fun `test lexer num dec with leading point`()
 	{
-		assertLexesSuccessfully(".53").all()
+		assertLexesSuccessfully(".53 -.23 +.38").all()
 		{
-			size().isEqualTo(1)
+			size().isEqualTo(3)
 			
 			index(0).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("0.53")
 			}
-		}
-	}
-	
-	@Test
-	internal fun `test lexer num dec with leading point negative`()
-	{
-		assertLexesSuccessfully("-.23").all()
-		{
-			size().isEqualTo(1)
 			
-			index(0).all()
+			index(1).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("-0.23")
 			}
-		}
-	}
-	
-	@Test
-	internal fun `test lexer num dec with leading point positive`()
-	{
-		assertLexesSuccessfully("+.38").all()
-		{
-			size().isEqualTo(1)
 			
-			index(0).all()
+			index(2).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.NUM)
 				prop("data") { it.data }.isEqualTo("+0.38")
@@ -163,14 +110,20 @@ object LexerTests
 	@Test
 	internal fun `test lexer let`()
 	{
-		assertLexesSuccessfully("'A'").all()
+		assertLexesSuccessfully("'A' ' ' ").all()
 		{
-			size().isEqualTo(1)
+			size().isEqualTo(2)
 			
 			index(0).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.LET)
 				prop("data") { it.data }.isEqualTo("A")
+			}
+			
+			index(1).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.LET)
+				prop("data") { it.data }.isEqualTo(" ")
 			}
 		}
 	}
@@ -178,14 +131,20 @@ object LexerTests
 	@Test
 	internal fun `test lexer txt`()
 	{
-		assertLexesSuccessfully(""""Hello World!"""").all()
+		assertLexesSuccessfully(""" "Hello World!" "" """).all()
 		{
-			size().isEqualTo(1)
+			size().isEqualTo(2)
 			
 			index(0).all()
 			{
 				prop("type") { it.type }.isEqualTo(TokenType.TXT)
 				prop("data") { it.data }.isEqualTo("Hello World!")
+			}
+			
+			index(1).all()
+			{
+				prop("type") { it.type }.isEqualTo(TokenType.TXT)
+				prop("data") { it.data }.isEqualTo("")
 			}
 		}
 	}

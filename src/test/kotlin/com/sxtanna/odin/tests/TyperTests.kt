@@ -26,6 +26,7 @@ import com.sxtanna.odin.runtime.CommandPropertyAccess
 import com.sxtanna.odin.runtime.CommandPropertyAssign
 import com.sxtanna.odin.runtime.CommandPropertyDefine
 import com.sxtanna.odin.runtime.CommandPropertyResets
+import com.sxtanna.odin.runtime.CommandTraitDefine
 import com.sxtanna.odin.runtime.base.Route
 import com.sxtanna.odin.runtime.base.Types
 import com.sxtanna.odin.runtime.data.Func
@@ -181,4 +182,36 @@ object TyperTests
 		}
 	}
 	
+	@Test
+	internal fun `test trait creation`()
+	{
+		val code =
+			"""
+				trait Sized(val size: Int)
+			""".trimIndent()
+		
+		assertTypesSuccessfully(code).all()
+		{
+			size().isEqualTo(1)
+			
+			index(0).isInstanceOf(CommandTraitDefine::class).prop("trait") { it.trait }.all()
+			{
+				prop("name") { it.name }.isEqualTo("Sized")
+				
+				prop("props") { it.props }.all()
+				{
+					size().isEqualTo(1)
+					
+					key("size").all()
+					{
+						prop("mutable") { it.mutable }.isFalse()
+						
+						prop("name") { it.name }.isEqualTo("size")
+						
+						prop("type") { it.type }.isEqualTo(Type.INT.back)
+					}
+				}
+			}
+		}
+	}
 }

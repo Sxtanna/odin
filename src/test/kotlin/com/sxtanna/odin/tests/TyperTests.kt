@@ -52,22 +52,22 @@ object TyperTests
 		{
 			size().isEqualTo(3)
 			
-			index(0).isInstanceOf(CommandPropertyDefine::class).prop(CommandPropertyDefine::prop).all()
+			index(0).isInstanceOf(CommandPropertyDefine::class).prop("prop") { it.prop }.all()
 			{
-				prop(Prop::mutable).isFalse()
+				prop("mutable") { it.mutable }.isFalse()
 				
-				prop(Prop::name).isEqualTo(name)
+				prop("name") { it.name }.isEqualTo(name)
 				
-				prop(Prop::type).isEqualTo(Types.none())
+				prop("type") { it.type }.isEqualTo(Types.none())
 			}
 			
 			index(1).isInstanceOf(CommandLiteral::class).all()
 			{
-				prop(CommandLiteral::type).isEqualTo("Int")
-				prop(CommandLiteral::data).isEqualTo(data)
+				prop("type") { it.type }.isEqualTo("Int")
+				prop("data") { it.data }.isEqualTo(data)
 			}
 			
-			index(2).isInstanceOf(CommandPropertyAssign::class).prop(CommandPropertyAssign::name).isEqualTo(name)
+			index(2).isInstanceOf(CommandPropertyAssign::class).prop("name") { it.name }.isEqualTo(name)
 		}
 	}
 	
@@ -79,9 +79,9 @@ object TyperTests
 		{
 			size().isEqualTo(1)
 			
-			index(0).isInstanceOf(CommandFunctionDefine::class).prop(CommandFunctionDefine::func).all()
+			index(0).isInstanceOf(CommandFunctionDefine::class).prop("func") { it.func }.all()
 			{
-				prop(Func::pull).all()
+				prop("pull") { it.pull }.all()
 				{
 					size().isEqualTo(2)
 					
@@ -89,45 +89,45 @@ object TyperTests
 					key("arg1").isEqualTo(Type.INT.back)
 				}
 				
-				prop(Func::push).all()
+				prop("push") { it.push }.all()
 				{
 					size().isEqualTo(1)
 					
 					key("ret0").isEqualTo(Type.INT.back)
 				}
 				
-				prop(Func::body).isNotNull().transform("unwrapped route", Route::unwrap).all()
+				prop("body") { it.body }.isNotNull().transform("unwrapped route", Route::unwrap).all()
 				{
 					size().isEqualTo(9)
 					
-					index(0).isInstanceOf(CommandPropertyDefine::class).prop(CommandPropertyDefine::prop).all()
+					index(0).isInstanceOf(CommandPropertyDefine::class).prop("prop") { it.prop }.all()
 					{
-						prop(Prop::mutable).isFalse()
+						prop("mutable") { it.mutable }.isFalse()
 						
-						prop(Prop::name).isEqualTo("arg0")
+						prop("name") { it.name }.isEqualTo("arg0")
 						
-						prop(Prop::type).isEqualTo(Type.INT.back)
+						prop("type") { it.type }.isEqualTo(Type.INT.back)
 					}
-					index(1).isInstanceOf(CommandPropertyAssign::class).prop(CommandPropertyAssign::name).isEqualTo("arg0")
+					index(1).isInstanceOf(CommandPropertyAssign::class).prop("name") { it.name }.isEqualTo("arg0")
 					
 					
-					index(2).isInstanceOf(CommandPropertyDefine::class).prop(CommandPropertyDefine::prop).all()
+					index(2).isInstanceOf(CommandPropertyDefine::class).prop("prop") { it.prop }.all()
 					{
-						prop(Prop::mutable).isFalse()
+						prop("mutable") { it.mutable }.isFalse()
 						
-						prop(Prop::name).isEqualTo("arg1")
+						prop("name") { it.name }.isEqualTo("arg1")
 						
-						prop(Prop::type).isEqualTo(Type.INT.back)
+						prop("type") { it.type }.isEqualTo(Type.INT.back)
 					}
-					index(3).isInstanceOf(CommandPropertyAssign::class).prop(CommandPropertyAssign::name).isEqualTo("arg1")
+					index(3).isInstanceOf(CommandPropertyAssign::class).prop("name") { it.name }.isEqualTo("arg1")
 					
-					index(4).isInstanceOf(CommandPropertyAccess::class).prop(CommandPropertyAccess::name).isEqualTo("arg0")
-					index(5).isInstanceOf(CommandPropertyAccess::class).prop(CommandPropertyAccess::name).isEqualTo("arg1")
+					index(4).isInstanceOf(CommandPropertyAccess::class).prop("name") { it.name }.isEqualTo("arg0")
+					index(5).isInstanceOf(CommandPropertyAccess::class).prop("name") { it.name }.isEqualTo("arg1")
 					
-					index(6).isInstanceOf(CommandOperate::class).prop(CommandOperate::oper).isSameAs(OperatorAdd)
+					index(6).isInstanceOf(CommandOperate::class).prop("operator") { it.oper }.isSameAs(OperatorAdd)
 					
-					index(7).isInstanceOf(CommandPropertyResets::class).prop(CommandPropertyResets::name).isEqualTo("arg0")
-					index(8).isInstanceOf(CommandPropertyResets::class).prop(CommandPropertyResets::name).isEqualTo("arg1")
+					index(7).isInstanceOf(CommandPropertyResets::class).prop("name") { it.name }.isEqualTo("arg0")
+					index(8).isInstanceOf(CommandPropertyResets::class).prop("name") { it.name }.isEqualTo("arg1")
 				}
 			}
 		}

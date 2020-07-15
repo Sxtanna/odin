@@ -34,8 +34,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("24")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("24")
 			}
 		}
 	}
@@ -49,8 +49,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("21.5")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("21.5")
 			}
 		}
 	}
@@ -64,8 +64,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("-26")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("-26")
 			}
 		}
 	}
@@ -79,8 +79,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("-27.2")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("-27.2")
 			}
 		}
 	}
@@ -94,8 +94,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("+34")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("+34")
 			}
 		}
 	}
@@ -109,8 +109,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("+36.55")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("+36.55")
 			}
 		}
 	}
@@ -124,8 +124,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("0.53")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("0.53")
 			}
 		}
 	}
@@ -139,8 +139,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("-0.23")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("-0.23")
 			}
 		}
 	}
@@ -154,8 +154,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.NUM)
-				prop(TokenData::data).isEqualTo("+0.38")
+				prop("type") { it.type }.isEqualTo(TokenType.NUM)
+				prop("data") { it.data }.isEqualTo("+0.38")
 			}
 		}
 	}
@@ -169,8 +169,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.LET)
-				prop(TokenData::data).isEqualTo("A")
+				prop("type") { it.type }.isEqualTo(TokenType.LET)
+				prop("data") { it.data }.isEqualTo("A")
 			}
 		}
 	}
@@ -184,8 +184,8 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.TXT)
-				prop(TokenData::data).isEqualTo("Hello World!")
+				prop("type") { it.type }.isEqualTo(TokenType.TXT)
+				prop("data") { it.data }.isEqualTo("Hello World!")
 			}
 		}
 	}
@@ -199,14 +199,14 @@ object LexerTests
 			
 			index(0).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.BIT)
-				prop(TokenData::data).isEqualTo("true")
+				prop("type") { it.type }.isEqualTo(TokenType.BIT)
+				prop("data") { it.data }.isEqualTo("true")
 			}
 			
 			index(1).all()
 			{
-				prop(TokenData::type).isEqualTo(TokenType.BIT)
-				prop(TokenData::data).isEqualTo("false")
+				prop("type") { it.type }.isEqualTo(TokenType.BIT)
+				prop("data") { it.data }.isEqualTo("false")
 			}
 		}
 	}
@@ -222,8 +222,8 @@ object LexerTests
 			{ index, word ->
 				index(index).all()
 				{
-					prop(TokenData::type).isEqualTo(TokenType.WORD)
-					prop(TokenData::data).isEqualTo(word.name.toLowerCase())
+					prop("type") { it.type }.isEqualTo(TokenType.WORD)
+					prop("data") { it.data }.isEqualTo(word.name.toLowerCase())
 				}
 			}
 		}

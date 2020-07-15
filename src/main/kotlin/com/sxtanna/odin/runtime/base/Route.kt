@@ -86,7 +86,7 @@ data class Route(val command: Command)
 				return none
 			}
 			
-			val routes = listOf(*commands.toTypedArray()).map(::Route)
+			val routes = commands.map(::Route)
 			
 			routes.forEachIndexed()
 			{ index, route ->

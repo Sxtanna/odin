@@ -304,7 +304,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			}
 			else       ->
 			{
-				throw IllegalStateException("token out of place: $peek")
+				throw TyperException.TokenOutOfPlace("main parser", peek)
 			}
 		}
 	}
@@ -345,7 +345,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			}
 			else    ->
 			{
-				throw UnsupportedOperationException("token out of place: $peek")
+				throw TyperException.TokenOutOfPlace("name parser", peek)
 			}
 		}
 	}
@@ -386,7 +386,7 @@ object Typer : (List<TokenData>) -> List<Command>
 				parseJava(cmds)
 			else       ->
 			{
-				throw UnsupportedOperationException("handling for word $word not found")
+				throw TyperException.WordNotImplemented(word, data)
 			}
 		}
 	}
@@ -488,7 +488,7 @@ object Typer : (List<TokenData>) -> List<Command>
 					continue
 				}
 				
-				throw UnsupportedOperationException("Token out of place: $peek")
+				throw TyperException.TokenOutOfPlace("function parser", peek)
 			}
 			
 			require(peek?.type == PAREN_R)
@@ -1114,7 +1114,7 @@ object Typer : (List<TokenData>) -> List<Command>
 						continue
 					}
 					
-					throw UnsupportedOperationException("Token out of place: $token")
+					throw TyperException.TokenOutOfPlace("trait function parser", token)
 				}
 				
 				token = next
@@ -1408,7 +1408,7 @@ object Typer : (List<TokenData>) -> List<Command>
 						continue
 					}
 					
-					throw UnsupportedOperationException("Token out of place: $token")
+					throw TyperException.TokenOutOfPlace("class function parser", token)
 				}
 				
 				token = next
@@ -1721,7 +1721,7 @@ object Typer : (List<TokenData>) -> List<Command>
 							OperatorLessOrSame
 						else ->
 						{
-							throw UnsupportedOperationException("unknown operator: $token")
+							throw TyperException.OperNotImplemented(token)
 						}
 					}
 					
@@ -1796,7 +1796,7 @@ object Typer : (List<TokenData>) -> List<Command>
 						}
 						else      ->
 						{
-							throw UnsupportedOperationException("word isn't usable in expressions: $token")
+							throw TyperException.TokenOutOfPlace("word in expression parser", token)
 						}
 					}
 				}
@@ -1806,7 +1806,7 @@ object Typer : (List<TokenData>) -> List<Command>
 				}
 				else       ->
 				{
-					throw UnsupportedOperationException("token out of place $token")
+					throw TyperException.TokenOutOfPlace("expression parser", token)
 				}
 			}
 		}
@@ -1935,7 +1935,7 @@ object Typer : (List<TokenData>) -> List<Command>
 			PAREN_L -> parseTupleType()
 			else    ->
 			{
-				throw IllegalStateException("token out of place: $peek")
+				throw TyperException.TokenOutOfPlace("tuple type parser", peek)
 			}
 		}
 	}
@@ -2062,7 +2062,7 @@ object Typer : (List<TokenData>) -> List<Command>
 				continue
 			}
 			
-			throw IllegalStateException("token out of position: $token")
+			throw TyperException.TokenOutOfPlace("new instance parser", token)
 		}
 		
 		cmds += CommandClazzCreate(data.data, Route.of(init))
@@ -2259,13 +2259,13 @@ object Typer : (List<TokenData>) -> List<Command>
 						false
 					else    ->
 					{
-						throw IllegalStateException("Invalid bit literal: $token")
+						throw TyperException.InvalidLiteral("invalid bit", token)
 					}
 				}
 			}
 			else ->
 			{
-				throw IllegalStateException("Invalid literal: $token")
+				throw TyperException.TokenOutOfPlace("literal parser", token)
 			}
 		}
 		
@@ -2420,6 +2420,21 @@ object Typer : (List<TokenData>) -> List<Command>
 			
 			return prevMatches && nextMatches
 		}
+	}
+	
+	sealed class TyperException(override val message: String) : Exception(message)
+	{
+		class TokenOutOfPlace(location: String, token: TokenData?)
+			: TyperException("token out of place in `$location`|`$token`")
+		
+		class WordNotImplemented(word: Word, token: TokenData?)
+			: TyperException("word `$word` contained in `$token` not implemented")
+		
+		class OperNotImplemented(token: TokenData?)
+			: TyperException("oper `${token?.data}` contained in `$token` not implemented")
+		
+		class InvalidLiteral(reason: String, token: TokenData?)
+			: TyperException("literal contained in `$token` is invalid: $reason")
 	}
 	
 }

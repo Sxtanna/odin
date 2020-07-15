@@ -5,6 +5,7 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.index
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFailure
 import assertk.assertions.isFalse
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
@@ -12,6 +13,7 @@ import assertk.assertions.isSameAs
 import assertk.assertions.isSuccess
 import assertk.assertions.isTrue
 import assertk.assertions.key
+import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.size
 import com.sxtanna.odin.compile.Lexer
@@ -207,6 +209,22 @@ object TyperTests
 					}
 				}
 			}
+		}
+	}
+	
+	@Test
+	internal fun `test main parser out of place`()
+	{
+		val code =
+			"""
+				"hello"
+			""".trimIndent()
+		
+		assertThat { Typer(Lexer(code)) }.isFailure().all()
+		{
+			isInstanceOf(Typer.TyperException.TokenOutOfPlace::class)
+			
+			messageContains("main parser")
 		}
 	}
 }

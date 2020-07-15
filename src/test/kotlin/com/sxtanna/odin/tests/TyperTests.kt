@@ -14,7 +14,6 @@ import assertk.assertions.isTrue
 import assertk.assertions.key
 import assertk.assertions.prop
 import assertk.assertions.size
-import com.sxtanna.odin.OdinTests
 import com.sxtanna.odin.compile.Lexer
 import com.sxtanna.odin.compile.Typer
 import com.sxtanna.odin.compile.data.OperatorAdd
@@ -29,13 +28,9 @@ import com.sxtanna.odin.runtime.CommandPropertyResets
 import com.sxtanna.odin.runtime.CommandTraitDefine
 import com.sxtanna.odin.runtime.base.Route
 import com.sxtanna.odin.runtime.base.Types
-import com.sxtanna.odin.runtime.data.Func
-import com.sxtanna.odin.runtime.data.Prop
 import com.sxtanna.odin.runtime.data.Type
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 
-@ExtendWith(OdinTests::class)
 object TyperTests
 {
 	

@@ -8,15 +8,12 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isSuccess
 import assertk.assertions.prop
 import assertk.assertions.size
-import com.sxtanna.odin.OdinTests
 import com.sxtanna.odin.compile.Lexer
 import com.sxtanna.odin.compile.base.TokenData
 import com.sxtanna.odin.compile.base.TokenType
 import com.sxtanna.odin.compile.data.Word
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 
-@ExtendWith(OdinTests::class)
 object LexerTests
 {
 	

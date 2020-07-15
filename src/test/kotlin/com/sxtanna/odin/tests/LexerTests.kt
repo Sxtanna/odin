@@ -304,4 +304,22 @@ object LexerTests
 			}
 		}
 	}
+	
+	@Test
+	internal fun `test lexer strips repeating new lines`()
+	{
+		val code =
+			"""
+				
+				
+				value
+				
+				
+			""".trimIndent()
+		
+		assertLexesSuccessfully(code).all()
+		{
+			size().isEqualTo(3)
+		}
+	}
 }

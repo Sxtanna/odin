@@ -8,98 +8,56 @@ import com.sxtanna.odin.compile.util.PeekIterator
 object Lexer : (String) -> List<TokenData>
 {
 	
-	private val digit = '0'..'9'
-	private val lower = 'a'..'z'
-	private val upper = 'A'..'Z'
-	
-	private val symbol = setOf('+', '-', '/', '*', '<', '>', '!', '&', '|')
-	
-	private val collapses = mutableListOf<Collapse>()
-	
-	init
-	{
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.STACK_PULL, "<|") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "<" },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == "|" })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.STACK_PUSH, "|>") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "|" },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == ">" })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "++") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "+" },
-		                      prevMatch = { it.type == TokenType.NAME },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == "+" })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "--") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "-" },
-		                      prevMatch = { it.type == TokenType.NAME },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == "-" })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "+=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "+" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "-=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "-" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "*=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "*" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "/=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "/" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "!=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "!" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, ">=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == ">" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "<=") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "<" },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "&&") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "&" },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == "&" })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "||") },
-		                      hereMatch = { it.type == TokenType.OPER && it.data == "|" },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == "|" })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.BOUND, "::") },
-		                      hereMatch = { it.type == TokenType.TYPED },
-		                      nextMatch = { it.type == TokenType.TYPED })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.OPER, "==") },
-		                      hereMatch = { it.type == TokenType.ASSIGN },
-		                      nextMatch = { it.type == TokenType.ASSIGN })
-		
-		collapses += Collapse(skipCount = 1,
-		                      intoToken = { TokenData(TokenType.RETURN, "=>") },
-		                      hereMatch = { it.type == TokenType.ASSIGN },
-		                      nextMatch = { it.type == TokenType.OPER && it.data == ">" })
-	}
+	private val collapses = listOf(Collapse(TokenData(TokenType.STACK_PULL, "<|"),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "<" },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == "|" }),
+	                               Collapse(TokenData(TokenType.STACK_PUSH, "|>"),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "|" },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == ">" }),
+	                               Collapse(TokenData(TokenType.OPER, "++"),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "+" },
+	                                        prevMatch = { it.type == TokenType.NAME },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == "+" }),
+	                               Collapse(TokenData(TokenType.OPER, "--"),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "-" },
+	                                        prevMatch = { it.type == TokenType.NAME },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == "-" }),
+	                               Collapse(TokenData(TokenType.OPER, "+="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "+" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "-="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "-" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "*="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "*" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "/="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "/" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "=="),
+	                                        hereMatch = { it.type == TokenType.ASSIGN },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "!="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "!" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, ">="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == ">" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "<="),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "<" },
+	                                        nextMatch = { it.type == TokenType.ASSIGN }),
+	                               Collapse(TokenData(TokenType.OPER, "&&"),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "&" },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == "&" }),
+	                               Collapse(TokenData(TokenType.OPER, "||"),
+	                                        hereMatch = { it.type == TokenType.OPER && it.data == "|" },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == "|" }),
+	                               Collapse(TokenData(TokenType.BOUND, "::"),
+	                                        hereMatch = { it.type == TokenType.TYPED },
+	                                        nextMatch = { it.type == TokenType.TYPED }),
+	                               Collapse(TokenData(TokenType.RETURN, "=>"),
+	                                        hereMatch = { it.type == TokenType.ASSIGN },
+	                                        nextMatch = { it.type == TokenType.OPER && it.data == ">" }))
 	
 	
 	private fun pass0(text: String): List<TokenData>
@@ -128,7 +86,7 @@ object Lexer : (String) -> List<TokenData>
 		{ c ->
 			when (c)
 			{
-				'\n'      ->
+				'\n'              ->
 				{
 					add(TokenType.NEWLINE, "")
 					
@@ -136,28 +94,28 @@ object Lexer : (String) -> List<TokenData>
 					char = 0
 				}
 				' ',
-				'\r'      ->
+				'\r'              ->
 					add(TokenType.SPACE, c)
-				','       ->
+				','               ->
 					add(TokenType.COMMA, c)
-				'{'       ->
+				'{'               ->
 					add(TokenType.BRACE_L, c)
-				'}'       ->
+				'}'               ->
 					add(TokenType.BRACE_R, c)
-				'['       ->
+				'['               ->
 					add(TokenType.BRACK_L, c)
-				']'       ->
+				']'               ->
 					add(TokenType.BRACK_R, c)
-				'('       ->
+				'('               ->
 					add(TokenType.PAREN_L, c)
-				')'       ->
+				')'               ->
 					add(TokenType.PAREN_R, c)
-				':'       ->
+				':'               ->
 					add(TokenType.TYPED, c)
-				'='       ->
+				'='               ->
 					add(TokenType.ASSIGN, c)
 				'\'',
-				'\"'      ->
+				'\"'              ->
 				{
 					val type = if (c == '\'') TokenType.LET else TokenType.TXT
 					
@@ -201,9 +159,9 @@ object Lexer : (String) -> List<TokenData>
 					add(type, data)
 				}
 				'.',
-				in digit  ->
+				in Char::isDigit  ->
 				{
-					if (c == '.' && iter.peek !in digit)
+					if (c == '.' && iter.peek !in Char::isDigit)
 					{
 						return@each add(TokenType.POINT, c)
 					}
@@ -221,7 +179,7 @@ object Lexer : (String) -> List<TokenData>
 						while (!iter.empty)
 						{
 							val value = iter.peek
-							if (value !in digit && value != '.')
+							if (value !in Char::isDigit && value != '.')
 							{
 								break
 							}
@@ -251,8 +209,7 @@ object Lexer : (String) -> List<TokenData>
 					
 					add(TokenType.NUM, value)
 				}
-				in lower,
-				in upper  ->
+				in Char::isLetter ->
 				{
 					val value = buildString()
 					{
@@ -261,7 +218,7 @@ object Lexer : (String) -> List<TokenData>
 						while (!iter.empty)
 						{
 							val value = iter.peek
-							if (value !in lower && value !in upper && value !in digit && value != '_')
+							if (value !in Char::isLetterOrDigit && value != '_')
 							{
 								break
 							}
@@ -289,7 +246,15 @@ object Lexer : (String) -> List<TokenData>
 					
 					add(type, value)
 				}
-				in symbol ->
+				'+',
+				'-',
+				'/',
+				'*',
+				'<',
+				'>',
+				'!',
+				'&',
+				'|'               ->
 				{
 					if (c == '/')
 					{
@@ -327,25 +292,16 @@ object Lexer : (String) -> List<TokenData>
 		
 		
 		// remove repeating new lines
-		val iterMut = toks.iterator()
+		val iterator = toks.iterator()
 		
-		while (iterMut.hasNext())
+		while (iterator.hasNext())
 		{
-			val here = iterMut.next()
-			if (here.type != TokenType.NEWLINE || !iterMut.hasNext())
+			if (iterator.next().type == TokenType.NEWLINE)
 			{
-				continue
-			}
-			
-			while (iterMut.hasNext())
-			{
-				val next = iterMut.next()
-				if (next.type != TokenType.NEWLINE)
+				while (iterator.hasNext() && iterator.next().type == TokenType.NEWLINE)
 				{
-					break
+					iterator.remove()
 				}
-				
-				iterMut.remove()
 			}
 		}
 		
@@ -371,7 +327,7 @@ object Lexer : (String) -> List<TokenData>
 			}
 			else
 			{
-				toks += collapse.intoToken.invoke()
+				toks += collapse.intoToken
 				
 				iter.move(collapse.skipCount)
 			}
@@ -392,11 +348,16 @@ object Lexer : (String) -> List<TokenData>
 	}
 	
 	
-	private data class Collapse(val skipCount: Int,
-	                            val intoToken: () -> TokenData,
+	private operator fun ((Char) -> Boolean).contains(char: Char?): Boolean
+	{
+		return char != null && this.invoke(char)
+	}
+	
+	private data class Collapse(val intoToken: TokenData,
 	                            val hereMatch: ((TokenData) -> Boolean),
 	                            val prevMatch: ((TokenData) -> Boolean)? = null,
-	                            val nextMatch: ((TokenData) -> Boolean)? = null)
+	                            val nextMatch: ((TokenData) -> Boolean)? = null,
+	                            val skipCount: Int = 1)
 	{
 		fun matches(here: TokenData, prev: TokenData?, next: TokenData?): Boolean
 		{
@@ -406,7 +367,11 @@ object Lexer : (String) -> List<TokenData>
 			}
 			
 			
-			val prevMatches = if (prevMatch != null)
+			val prevMatches = if (prevMatch == null)
+			{
+				true
+			}
+			else
 			{
 				if (prev == null)
 				{
@@ -417,12 +382,12 @@ object Lexer : (String) -> List<TokenData>
 					prevMatch.invoke(prev)
 				}
 			}
-			else
+			
+			val nextMatches = if (nextMatch == null)
 			{
 				true
 			}
-			
-			val nextMatches = if (nextMatch != null)
+			else
 			{
 				if (next == null)
 				{
@@ -432,10 +397,6 @@ object Lexer : (String) -> List<TokenData>
 				{
 					nextMatch.invoke(next)
 				}
-			}
-			else
-			{
-				true
 			}
 			
 			return prevMatches && nextMatches

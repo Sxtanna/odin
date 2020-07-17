@@ -3,6 +3,7 @@
 package com.sxtanna.odin.compile
 
 import com.sxtanna.odin.compile.base.TokenData
+import com.sxtanna.odin.compile.base.TokenType
 import com.sxtanna.odin.compile.base.TokenType.*
 import com.sxtanna.odin.compile.data.Oper
 import com.sxtanna.odin.compile.data.OperatorAdd
@@ -394,9 +395,9 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseProp(cmds: CommandChain, mutable: Boolean): Prop
 	{
-		require(peek?.type == NAME)
+		requireTokenType(NAME)
 		{
-			"property missing name $peek"
+			"property missing name in property parser"
 		}
 		
 		val prop = Prop(next.data, mutable)
@@ -408,9 +409,9 @@ object Typer : (List<TokenData>) -> List<Command>
 			prop.type = parseType()
 		}
 		
-		require(peek?.type == ASSIGN)
+		requireTokenType(ASSIGN)
 		{
-			"must be assignment: $peek"
+			"property missing assignment in property parser"
 		}
 		
 		move(amount = 1)
@@ -424,9 +425,9 @@ object Typer : (List<TokenData>) -> List<Command>
 	
 	private fun IterOfTokens.parseFunc(cmds: CommandChain): Func
 	{
-		require(peek?.type == NAME)
+		requireTokenType(NAME)
 		{
-			"function missing name $peek"
+			"function missing name in function parser"
 		}
 		
 		val func = Func(next.data)
@@ -491,21 +492,11 @@ object Typer : (List<TokenData>) -> List<Command>
 				throw TyperException.TokenOutOfPlace("function parser", peek)
 			}
 			
-			require(peek?.type == PAREN_R)
-			{
-				"function parameters must be surrounded in parentheses"
-			}
-			
 			move(amount = 1)
 		}
 		
 		if (peek?.type == TYPED)
 		{
-			require(peek?.type == TYPED)
-			{
-				"function return type must be specified with typed symbol"
-			}
-			
 			move(amount = 1)
 			
 			func.push["ret0"] = parseType()
@@ -513,9 +504,9 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		ignoreNewLines()
 		
-		require(peek?.type == BRACE_L)
+		requireTokenType(BRACE_L)
 		{
-			"function body must be surrounded with braces : $peek"
+			"function body missing opening brace in function parser"
 		}
 		
 		move(amount = 1)
@@ -561,9 +552,9 @@ object Typer : (List<TokenData>) -> List<Command>
 		
 		ignoreNewLines()
 		
-		require(peek?.type == BRACE_R)
+		requireTokenType(BRACE_R)
 		{
-			"function body must be surrounded with braces"
+			"function body missing closing brace in function parser"
 		}
 		
 		move(amount = 1)
@@ -2370,6 +2361,17 @@ object Typer : (List<TokenData>) -> List<Command>
 		{
 			move(amount = 1)
 		}
+	}
+	
+	private fun IterOfTokens.requireTokenType(type: TokenType, message: () -> String)
+	{
+		val token = peek
+		if (token != null && token.type == type)
+		{
+			return
+		}
+		
+		throw TyperException.TokenOutOfPlace(message(), token)
 	}
 	
 	

@@ -11,20 +11,9 @@ import com.sxtanna.odin.runtime.base.Stack
 object Odin
 {
 	
-	private val builtins: OdinScript
-	
-	init
-	{
-		builtins = requireNotNull(assemble(readInternalSource("collection.o"), null))
-		{
-			"could not assemble builtins"
-		}
-	}
-	
-	
 	@JvmStatic
 	@JvmOverloads
-	fun assemble(source: String, superScript: OdinScript? = builtins): OdinScript?
+	fun assemble(source: String, superScript: OdinScript? = null): OdinScript?
 	{
 		val lexed: List<TokenData>
 		try
@@ -37,8 +26,6 @@ object Odin
 			return null
 		}
 		
-		// println(lexed.joinToString("\n"))
-		
 		val typed: List<Command>
 		
 		try
@@ -50,8 +37,6 @@ object Odin
 			ex.printStackTrace()
 			return null
 		}
-		
-		// println(typed.joinToString("\n"))
 		
 		val script = if (superScript == null)
 		{
@@ -95,15 +80,6 @@ object Odin
 			}
 			
 			route = route.next
-		}
-	}
-	
-	
-	private fun readInternalSource(name: String): String
-	{
-		return requireNotNull(ClassLoader.getSystemClassLoader().getResourceAsStream(name)?.bufferedReader()?.readText())
-		{
-			"could not read builtin source of $name"
 		}
 	}
 	
